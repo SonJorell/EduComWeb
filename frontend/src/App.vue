@@ -1,22 +1,40 @@
 <template>
-  <router-view />
+  <div>
+    <Loader v-if="loading" />
+
+    <router-view v-slot="{ Component }">
+  <transition name="fade" mode="out-in">
+    <component :is="Component" />
+  </transition>
+</router-view>
+
+  </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import Loader from './components/Loader.vue'
+
+const loading = ref(false)
+const router = useRouter()
+
+router.beforeEach((to, from, next) => {
+  loading.value = true
+  next()
+})
+router.afterEach(() => {
+  setTimeout(() => (loading.value = false), 400)
+})
 </script>
 
-
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+<style>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.4s ease;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

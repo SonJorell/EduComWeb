@@ -1,0 +1,143 @@
+// ============================
+// Prisma Configuración
+// ============================
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================
+// Modelos Principales
+// ============================
+
+// Roles: Profesor, Apoderado, Administrador, etc.
+model Rol {
+  id       Int       @id @default(autoincrement())
+  nombre   String    @unique
+  usuarios Usuario[]
+}
+
+// Usuario general del sistema
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  email     String   @unique
+  passwordHash String    // Hasheado con bcrypt
+  rolId     Int
+  rol       Rol      @relation(fields: [rolId], references: [id])
+
+  // Relaciones
+  notificacionesEnviadas Notificacion[] @relation("EmisorNotificacion")
+  apoderado              Apoderado?
+  profesorCursos         ProfesorCurso[]
+}
+
+// ============================
+// Comunidad educativa
+// ============================
+
+// Apoderado vinculado 1:1 con Usuario
+model Apoderado {
+  id          Int       @id @default(autoincrement())
+  usuarioId   Int       @unique
+  usuario     Usuario   @relation(fields: [usuarioId], references: [id])
+
+  nombre      String
+  rut         String?   @unique
+  telefono    String?
+  email       String?   @unique  // puede ser distinto al del usuario
+
+  alumnos     Alumno[]
+  recepciones Recepcion[]
+}
+
+// Alumno perteneciente a un curso
+model Alumno {
+  id           Int        @id @default(autoincrement())
+  nombre       String
+  cursoId      Int
+  apoderadoId  Int
+
+  curso        Curso      @relation(fields: [cursoId], references: [id])
+  apoderado    Apoderado  @relation(fields: [apoderadoId], references: [id])
+}
+
+// Curso académico
+model Curso {
+  id             Int             @id @default(autoincrement())
+  nombre         String          @unique
+  nivel          String
+  jornada        String?         // Mañana / Tarde
+  anio           Int?            // Año académico
+
+  alumnos        Alumno[]
+  profesorCursos ProfesorCurso[]
+}
+
+// Relación Profesor ↔ Curso
+model ProfesorCurso {
+  id          Int      @id @default(autoincrement())
+  profesorId  Int
+  cursoId     Int
+  rolInterno  String?   // "JEFE" o "ASIGNATURA"
+
+  profesor    Usuario   @relation(fields: [profesorId], references: [id])
+  curso       Curso     @relation(fields: [cursoId], references: [id])
+
+  @@unique([profesorId, cursoId])
+}
+
+// ============================
+// Notificaciones y comunicación
+// ============================
+
+// Tipos posibles de notificación
+enum TipoNotificacion {
+  REUNION
+  FELICITACION
+  ANOTACION
+  AVISO
+}
+
+// ======================================================
+// 📬 Notificación emitida por un usuario (profesor o dirección)
+// ======================================================
+model Notificacion {
+  id             Int               @id @default(autoincrement())
+  titulo         String?
+  mensaje        String
+  tipo           TipoNotificacion? // Ej: REUNION, AVISO, ANOTACION, FELICITACION
+  prioridad      String?           // Alta, Media, Baja
+  emisorId       Int
+  emisor         Usuario           @relation("EmisorNotificacion", fields: [emisorId], references: [id])
+  createdAt      DateTime          @default(now())
+  programadaPara DateTime?
+  
+  cursosDestino  Json?             // 👈 Nuevo campo (almacena los cursos destino en formato JSON)
+
+  recepciones    Recepcion[]
+}
+
+// ======================================================
+// 👨‍👩‍👧 Relación entre apoderado y notificación recibida
+// ======================================================
+model Recepcion {
+  id              Int          @id @default(autoincrement())
+  notificacionId  Int
+  apoderadoId     Int
+
+  notificacion    Notificacion @relation(fields: [notificacionId], references: [id])
+  apoderado       Apoderado    @relation(fields: [apoderadoId], references: [id])
+
+  leido           Boolean      @default(false)
+  confirmado      Boolean      @default(false)
+  leidoAt         DateTime?
+  confirmadoAt    DateTime?
+
+  @@unique([notificacionId, apoderadoId])
+}
+
