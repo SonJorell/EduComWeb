@@ -1,35 +1,3 @@
----
-title: "EduCom Web – Plataforma de Comunicación Colegio Arica"
-version: "1.0.0"
-last_update: "Noviembre 2025"
-developed_by: "J2N Software"
-leader: "Jorell Bermejo Arias"
-repository: "https://github.com/J2N-Software/educom-web"
-budget:
-  original: "$6.188.000  CLP (con IVA)"
-  updated: "8.700.000 CLP (con IVA)"
-  change_request: "SC-2025-01"
-  justification: "Incremento del 10% por costos operativos, QA y soporte post-lanzamiento."
-team:
-  - name: "Jorell Antonio Bermejo Arias"
-    role: "Líder de Proyecto / FullStack"
-    responsibilities: "Arquitectura del sistema, autenticación y despliegue."
-  - name: "Nicolás Benjamín Ponce Hernández"
-    role: "Scrum Master / Frontend"
-    responsibilities: "Coordinación ágil, desarrollo de interfaz y conexión API."
-  - name: "Juan David Camilo Churata Mamani"
-    role: "QA / Tester"
-    responsibilities: "Pruebas funcionales, documentación técnica y control de calidad."
-contact:
-  team_email: "j2nsoftware@gmail.com"
-  leader_email: "jorellbermejo@gmail.com"
-  location: "Arica, Chile"
-  year: 2025
-license:
-  owner: "J2N Software"
-  client: "Colegio Arica"
-  rights: "Proyecto exclusivo, no reproducible sin autorización."
----
 
 # 📘 EduCom Web – Plataforma de Comunicación Colegio Arica
 
