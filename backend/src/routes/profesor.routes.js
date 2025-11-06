@@ -1,5 +1,5 @@
 // ==========================================
-// Rutas del módulo Profesor - EduCom
+// 📘 Rutas del módulo Profesor - EduCom
 // ==========================================
 import express from 'express'
 import { requireAuth, requireRole } from '../middlewares/auth.middleware.js'
@@ -13,31 +13,79 @@ import {
   comunicadosRecientes
 } from '../controllers/profesor.controller.js'
 
+// ==========================================
+// 🚀 Inicialización del router
+// ==========================================
 const router = express.Router()
 
 // ==========================================
-// 🔹 RUTAS DEL DASHBOARD DEL PROFESOR
+// 🧭 Grupo de rutas protegidas para PROFESOR
 // ==========================================
 
-// ✅ Obtener los cursos del profesor
-router.get('/me/cursos', requireAuth, requireRole('Profesor'), cursosProfesor)
+// ✅ Obtener los cursos asignados al profesor
+// Ejemplo: GET /profesores/me/cursos
+router.get(
+  '/me/cursos',
+  requireAuth,
+  requireRole('Profesor'),
+  cursosProfesor
+)
 
-// ✅ Obtener resumen general del profesor
-router.get('/me/resumen', requireAuth, requireRole('Profesor'), resumenProfesor)
+// ✅ Obtener el resumen general del dashboard
+// Ejemplo: GET /profesores/me/resumen
+router.get(
+  '/me/resumen',
+  requireAuth,
+  requireRole('Profesor'),
+  resumenProfesor
+)
 
-// ✅ Obtener notificaciones enviadas
-router.get('/me/notificaciones', requireAuth, requireRole('Profesor'), notificacionesProfesor)
+// ✅ Listar todas las notificaciones enviadas por el profesor
+// Ejemplo: GET /profesores/me/notificaciones
+router.get(
+  '/me/notificaciones',
+  requireAuth,
+  requireRole('Profesor'),
+  notificacionesProfesor
+)
 
-// ✅ Obtener comunicados recientes (para vista principal)
-router.get('/me/comunicados', requireAuth, requireRole('Profesor'), comunicadosRecientes)
+// ✅ Obtener comunicados recientes (para el dashboard principal)
+// Ejemplo: GET /profesores/me/comunicados
+router.get(
+  '/me/comunicados',
+  requireAuth,
+  requireRole('Profesor'),
+  comunicadosRecientes
+)
 
-// ✅ Obtener apoderados asociados a los cursos del profesor
-router.get('/me/apoderados', requireAuth, requireRole('Profesor'), apoderadosProfesor)
+// ✅ Obtener los apoderados asociados a los cursos del profesor
+// Ejemplo: GET /profesores/me/apoderados
+router.get(
+  '/me/apoderados',
+  requireAuth,
+  requireRole('Profesor'),
+  apoderadosProfesor
+)
 
-// ✅ Enviar nueva notificación / comunicado
-router.post('/notificaciones', requireAuth, requireRole('Profesor'), enviarNotificacion)
+// ✅ Enviar una nueva notificación o comunicado
+// Ejemplo: POST /profesores/notificaciones
+router.post(
+  '/notificaciones',
+  requireAuth,
+  requireRole('Profesor'),
+  enviarNotificacion
+)
 
-// ✅ Obtener detalle completo de una notificación específica
-router.get('/notificaciones/:id', requireAuth, requireRole('Profesor'), detalleNotificacion)
+// ✅ Obtener el detalle completo de una notificación específica
+// Ejemplo: GET /profesores/notificaciones/:id
+router.get(
+  '/notificaciones/:id',
+  requireAuth,
+  requireRole('Profesor'),
+  detalleNotificacion
+)
 
+// ==========================================
+// 🧩 Exportar router
+// ==========================================
 export default router

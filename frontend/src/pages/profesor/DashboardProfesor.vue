@@ -50,26 +50,49 @@ async function cargarDatos() {
       profesorService.obtenerCursos(),
       profesorService.obtenerComunicadosRecientes()
     ])
-    
-    resumen.value = rResumen.data
-    notificaciones.value = rNotif.data
-    cursos.value = rCursos.data
-    comunicados.value = rComunicados.data.map(c => ({
-      id: c.id,
-      titulo: c.titulo,
-      tipo: c.tipo || 'General',
-      fecha: new Date(c.fecha).toLocaleDateString('es-CL'),
-      porcentajeLeido: c.porcentajeLeido,
-      porcentajeConfirmado: c.porcentajeConfirmado,
-      cursoNombre: c.cursos?.join(', ') || 'Todos',
-      cursoId: c.cursoId || null
-    }))
+
+    // --- Resumen (Tarjetas de arriba)
+    resumen.value = {
+      totalEnviados: rResumen.data?.totalEnviados ?? 0,
+      tasaConfirmacion: rResumen.data?.tasaConfirmacion ?? 0,
+      pendientes: rResumen.data?.pendientes ?? 0
+    }
+
+    // --- Notificaciones y cursos
+    notificaciones.value = rNotif.data || []
+    cursos.value = rCursos.data || []
+
+    // --- Comunicados recientes (con formato corregido)
+    comunicados.value = (rComunicados.data || []).map(c => {
+      const fechaValida = c.fecha
+        ? new Date(c.fecha)
+        : null
+
+      return {
+        id: c.id,
+        titulo: c.titulo || 'Sin título',
+        tipo: c.tipo || 'General',
+        fecha: fechaValida && !isNaN(fechaValida)
+          ? fechaValida.toLocaleDateString('es-CL', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            })
+          : 'Sin fecha',
+        porcentajeLeido: Number(c.porcentajeLeido ?? 0),
+        porcentajeConfirmado: Number(c.porcentajeConfirmado ?? 0),
+        cursoNombre: Array.isArray(c.cursos) ? c.cursos.join(', ') : 'Todos',
+        cursoId: c.cursoId ?? null
+      }
+    })
   } catch (err) {
     console.error('Error al cargar datos:', err)
   } finally {
     isLoading.value = false
   }
 }
+
+
 
 async function verDetalle(id) {
   try {
@@ -577,7 +600,7 @@ onUnmounted(() => {
                   { 
                     title: 'Total Enviados', 
                     subtitle: 'Este Mes', 
-                    value: resumen?.totalEnviados || '128', 
+                    value: resumen?.totalEnviados ?? 0, 
                     sub: '+5%', 
                     color: 'from-blue-500 to-cyan-500', 
                     icon: 'mail', 
@@ -586,7 +609,7 @@ onUnmounted(() => {
                   { 
                     title: 'Tasa Confirmación', 
                     subtitle: 'Promedio', 
-                    value: resumen?.tasaConfirmacion || '91%', 
+                    value: resumen?.tasaConfirmacion ? resumen.tasaConfirmacion + '%' : '0%',
                     sub: 'Meta: >90%', 
                     color: 'from-green-500 to-emerald-500', 
                     icon: 'check-check', 
@@ -595,7 +618,7 @@ onUnmounted(() => {
                   { 
                     title: 'Pendientes', 
                     subtitle: 'Últimos 7 días', 
-                    value: resumen?.pendientes || '15', 
+                    value: resumen?.pendientes ?? 0, 
                     sub: 'Requieren atención', 
                     color: 'from-yellow-500 to-orange-500', 
                     icon: 'alert-circle', 
@@ -668,22 +691,7 @@ onUnmounted(() => {
                     </p>
                   </div>
                   
-                  <!-- Filtro mejorado -->
-                  <div class="flex items-center gap-2 sm:gap-3">
-                    <span class="text-xs sm:text-sm text-slate-400 font-medium whitespace-nowrap">Curso:</span>
-                    <div class="relative">
-                      <select 
-                        v-model="cursoSeleccionado"
-                        class="bg-slate-800/80 border border-slate-700 text-white text-xs sm:text-sm rounded-xl focus:ring-2 focus:ring-blue-500 px-3 py-2.5 pr-10 transition-all outline-none appearance-none cursor-pointer hover:bg-slate-700 backdrop-blur-sm"
-                      >
-                        <option value="Todos">Todos los cursos</option>
-                        <option v-for="curso in cursos" :key="curso.id" :value="curso.id">
-                          {{ curso.nombre }}
-                        </option>
-                      </select>
-                      <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
-                    </div>
-                  </div>
+                  
                 </div>
               </div>
 
@@ -733,7 +741,8 @@ onUnmounted(() => {
                           }`"
                         >
                           <i :data-lucide="item.porcentajeLeido >= 90 ? 'eye' : 'eye-off'" class="w-3.5 h-3.5"></i>
-                          {{ item.porcentajeLeido }}%
+                          {{ item.porcentajeLeido.toFixed(0) }}%
+
                         </span>
                       </td>
                       <td class="px-6 py-4 text-center">
@@ -798,7 +807,8 @@ onUnmounted(() => {
                       }`"
                     >
                       <i :data-lucide="item.porcentajeLeido >= 90 ? 'eye' : 'eye-off'" class="w-3.5 h-3.5"></i>
-                      Leído: {{ item.porcentajeLeido }}%
+                      Leído: {{ item.porcentajeLeido.toFixed(0) }}%
+
                     </span>
                     <span
                       :class="`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg ${
@@ -823,26 +833,7 @@ onUnmounted(() => {
                 <p class="text-sm text-slate-500">{{ cursoSeleccionado === 'Todos' ? 'Aún no has enviado comunicados.' : 'No hay comunicados para este curso.' }}</p>
               </div>
 
-              <!-- Footer con paginación -->
-              <div v-if="comunicadosFiltrados.length" class="p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-slate-800/50 bg-slate-900/30 backdrop-blur-sm">
-                <p class="text-slate-400 text-xs sm:text-sm text-center sm:text-left">
-                  Mostrando <span class="text-white font-semibold">{{ comunicadosFiltrados.length }}</span> de <span class="text-white font-semibold">{{ comunicados.length }}</span> comunicados
-                </p>
-                <div class="flex gap-2">
-                  <button class="px-3 sm:px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-all text-xs sm:text-sm font-medium active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span class="flex items-center gap-1">
-                      <i data-lucide="chevron-left" class="w-4 h-4"></i>
-                      <span class="hidden sm:inline">Anterior</span>
-                    </span>
-                  </button>
-                  <button class="px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg transition-all text-xs sm:text-sm font-medium shadow-lg shadow-blue-600/30 hover:scale-105 active:scale-100">
-                    <span class="flex items-center gap-1">
-                      <span class="hidden sm:inline">Siguiente</span>
-                      <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                    </span>
-                  </button>
-                </div>
-              </div>
+              
             </section>
           </template>
 

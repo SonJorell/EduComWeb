@@ -1,7 +1,9 @@
 import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
-// ✅ Obtener cursos del profesor
+// =====================================================
+// 📚 Obtener cursos asignados al profesor
+// =====================================================
 export async function cursosProfesor(req, res) {
   try {
     const profesorId = req.user.sub
@@ -22,7 +24,9 @@ export async function cursosProfesor(req, res) {
   }
 }
 
-// ✅ Resumen general del profesor
+// =====================================================
+// 📊 Resumen general del dashboard del profesor
+// =====================================================
 export async function resumenProfesor(req, res) {
   try {
     const profesorId = req.user.sub
@@ -36,23 +40,26 @@ export async function resumenProfesor(req, res) {
     const totalAlumnos = await prisma.alumno.count({
       where: { cursoId: { in: cursoIds } }
     })
+
     const totalNotificaciones = await prisma.notificacion.count({
       where: { emisorId: profesorId }
     })
-    const totalRecepciones = await prisma.recepcion.findMany({
-      where: { notificacion: { emisorId: profesorId } }
+
+    const recepciones = await prisma.recepcion.findMany({
+      where: { notificacion: { emisorId: profesorId } },
+      select: { leido: true, confirmado: true }
     })
 
-    const leidas = totalRecepciones.filter(r => r.leido).length
-    const confirmadas = totalRecepciones.filter(r => r.confirmado).length
-    const total = totalRecepciones.length
+    const total = recepciones.length
+    const leidas = recepciones.filter(r => r.leido).length
+    const confirmadas = recepciones.filter(r => r.confirmado).length
 
     res.json({
+      totalEnviados: totalNotificaciones,
+      tasaConfirmacion: total ? Math.round((confirmadas / total) * 100) : 0,
+      pendientes: total ? total - confirmadas : 0,
       cursos: cursoIds.length,
-      alumnos: totalAlumnos,
-      notificaciones: totalNotificaciones,
-      porcentajeLeidas: total ? Math.round((leidas / total) * 100) : 0,
-      porcentajeConfirmadas: total ? Math.round((confirmadas / total) * 100) : 0
+      alumnos: totalAlumnos
     })
   } catch (err) {
     console.error('resumenProfesor error:', err)
@@ -60,7 +67,9 @@ export async function resumenProfesor(req, res) {
   }
 }
 
-// ✅ Listar notificaciones enviadas por el profesor
+// =====================================================
+// 📨 Listar notificaciones enviadas por el profesor
+// =====================================================
 export async function notificacionesProfesor(req, res) {
   try {
     const profesorId = req.user.sub
@@ -72,20 +81,26 @@ export async function notificacionesProfesor(req, res) {
     })
 
     const result = []
-
     for (const n of notificaciones) {
-      const total = n.recepciones.length
+      const total = n.recepciones.length || 1
       const leidos = n.recepciones.filter(r => r.leido).length
       const confirmados = n.recepciones.filter(r => r.confirmado).length
 
-      // Obtener nombres de cursos desde el campo JSON
+      // Parsear cursosDestino
       let nombresCursos = []
-      if (Array.isArray(n.cursosDestino) && n.cursosDestino.length > 0) {
-        const cursos = await prisma.curso.findMany({
-          where: { id: { in: n.cursosDestino } },
-          select: { nombre: true }
-        })
-        nombresCursos = cursos.map(c => c.nombre)
+      if (n.cursosDestino) {
+        try {
+          const ids = Array.isArray(n.cursosDestino)
+            ? n.cursosDestino
+            : JSON.parse(n.cursosDestino)
+          const cursos = await prisma.curso.findMany({
+            where: { id: { in: ids } },
+            select: { nombre: true }
+          })
+          nombresCursos = cursos.map(c => c.nombre)
+        } catch {
+          nombresCursos = ['Sin curso asignado']
+        }
       }
 
       result.push({
@@ -93,10 +108,9 @@ export async function notificacionesProfesor(req, res) {
         titulo: n.titulo || '(Sin título)',
         mensaje: n.mensaje,
         tipo: n.tipo,
-        fecha: n.createdAt.toLocaleDateString('es-CL'),
-        leido: total ? Math.round((leidos / total) * 100) : 0,
-        confirmado: total ? Math.round((confirmados / total) * 100) : 0,
-        destinatarios: total,
+        fecha: n.createdAt.toISOString(),
+        leido: Math.round((leidos / total) * 100),
+        confirmado: Math.round((confirmados / total) * 100),
         cursos: nombresCursos
       })
     }
@@ -108,7 +122,9 @@ export async function notificacionesProfesor(req, res) {
   }
 }
 
-// ✅ Obtener apoderados asociados a los cursos del profesor
+// =====================================================
+// 👨‍👩‍👧 Obtener apoderados vinculados a cursos del profesor
+// =====================================================
 export async function apoderadosProfesor(req, res) {
   try {
     const profesorId = req.user.sub
@@ -120,9 +136,7 @@ export async function apoderadosProfesor(req, res) {
     const cursoIds = cursos.map(c => c.cursoId)
 
     const apoderados = await prisma.apoderado.findMany({
-      where: {
-        alumnos: { some: { cursoId: { in: cursoIds } } }
-      },
+      where: { alumnos: { some: { cursoId: { in: cursoIds } } } },
       distinct: ['id'],
       select: { id: true, nombre: true, email: true, telefono: true, rut: true }
     })
@@ -134,7 +148,9 @@ export async function apoderadosProfesor(req, res) {
   }
 }
 
-// ✅ Enviar nueva notificación (a curso completo, grupo o individual)
+// =====================================================
+// ✉️ Enviar nueva notificación (a curso o apoderado)
+// =====================================================
 export async function enviarNotificacion(req, res) {
   try {
     const { titulo, mensaje, tipo, cursoIds = [], apoderadoIds = [] } = req.body
@@ -156,7 +172,6 @@ export async function enviarNotificacion(req, res) {
       }
     })
 
-    // Obtener apoderados
     let apoderadosDestino = []
 
     if (cursoIds.length > 0) {
@@ -192,12 +207,14 @@ export async function enviarNotificacion(req, res) {
       destinatarios: apoderadoIdsUnicos.length
     })
   } catch (err) {
-    console.error('Error en enviarNotificacion:', err)
+    console.error('enviarNotificacion error:', err)
     res.status(500).json({ error: 'Error interno al enviar la notificación.' })
   }
 }
 
-// ✅ Detalle de una notificación (solo cursos seleccionados)
+// =====================================================
+// 🧾 Detalle completo de una notificación
+// =====================================================
 export async function detalleNotificacion(req, res) {
   try {
     const profesorId = req.user.sub
@@ -237,7 +254,9 @@ export async function detalleNotificacion(req, res) {
       correo: r.apoderado.email,
       telefono: r.apoderado.telefono,
       leido: r.leido,
-      confirmado: r.confirmado
+      confirmado: r.confirmado,
+      leidoAt: r.leidoAt ? r.leidoAt.toISOString() : null,
+      confirmadoAt: r.confirmadoAt ? r.confirmadoAt.toISOString() : null
     }))
 
     res.json({
@@ -245,7 +264,7 @@ export async function detalleNotificacion(req, res) {
       titulo: notificacion.titulo,
       mensaje: notificacion.mensaje,
       tipo: notificacion.tipo,
-      fecha: notificacion.createdAt.toLocaleString('es-CL'),
+      fecha: notificacion.createdAt.toISOString(),
       cursos: cursos.map(c => c.nombre),
       totalDestinatarios: notificacion.recepciones.length,
       apoderados
@@ -256,17 +275,54 @@ export async function detalleNotificacion(req, res) {
   }
 }
 
-// ✅ Comunicados recientes (últimos 5)
+// =====================================================
+// 🕓 Comunicados recientes del profesor (para dashboard)
+// =====================================================
 export async function comunicadosRecientes(req, res) {
   try {
     const profesorId = req.user.sub
+
     const recientes = await prisma.notificacion.findMany({
       where: { emisorId: profesorId },
       orderBy: { createdAt: 'desc' },
-      take: 5
+      take: 5,
+      include: { recepciones: { select: { leido: true, confirmado: true } } }
     })
 
-    res.json(recientes)
+    const data = []
+    for (const n of recientes) {
+      const total = n.recepciones.length || 1
+      const leidos = n.recepciones.filter(r => r.leido).length
+      const confirmados = n.recepciones.filter(r => r.confirmado).length
+
+      let cursos = []
+      if (n.cursosDestino) {
+        try {
+          const ids = Array.isArray(n.cursosDestino)
+            ? n.cursosDestino
+            : JSON.parse(n.cursosDestino)
+          const cursosData = await prisma.curso.findMany({
+            where: { id: { in: ids } },
+            select: { nombre: true }
+          })
+          cursos = cursosData.map(c => c.nombre)
+        } catch {
+          cursos = ['Sin curso asignado']
+        }
+      }
+
+      data.push({
+        id: n.id,
+        titulo: n.titulo || '(Sin título)',
+        tipo: n.tipo || 'General',
+        fecha: n.createdAt.toISOString(),
+        porcentajeLeido: Math.round((leidos / total) * 100),
+        porcentajeConfirmado: Math.round((confirmados / total) * 100),
+        cursos
+      })
+    }
+
+    res.json(data)
   } catch (err) {
     console.error('comunicadosRecientes error:', err)
     res.status(500).json({ error: 'Error al obtener comunicados recientes.' })
