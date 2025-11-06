@@ -74,8 +74,6 @@ Además, se aplicaron prácticas de **ITIL 4** en la gestión de incidentes, cam
 
 ---
 
----
-
 ## 👥 Equipo de Desarrollo
 
 | Integrante | Rol | Responsabilidades |
