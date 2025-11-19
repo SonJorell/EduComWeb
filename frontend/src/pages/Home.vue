@@ -68,10 +68,10 @@ onMounted(() => {
           <!-- Logo -->
           <div class="flex items-center gap-3 group cursor-pointer">
             <div class="w-12 h-12 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-              <img 
-                src="https://i.postimg.cc/Px9xM3Y4/logo-Colegio-Arica.png" 
+                <img 
+                src="https://i.postimg.cc/nrQmRMvz/logo-Colegio-Arica.png" 
                 alt="Colegio Arica"
-                class="w-10 h-10 object-contain"
+                class="w-16 h-16 md:w-20 md:h-20 object-contain"
               />
             </div>
             <div>
@@ -83,9 +83,9 @@ onMounted(() => {
           <!-- Desktop Navigation -->
           <div class="hidden md:flex items-center gap-8">
             <a href="#inicio" class="text-slate-700 hover:text-blue-600 font-medium transition-colors">Inicio</a>
-            <a href="#nosotros" class="text-slate-700 hover:text-blue-600 font-medium transition-colors">Nosotros</a>
+            
             <a href="#academico" class="text-slate-700 hover:text-blue-600 font-medium transition-colors">Académico</a>
-            <a href="#admision" class="text-slate-700 hover:text-blue-600 font-medium transition-colors">Admisión</a>
+            
             <a href="#noticias" class="text-slate-700 hover:text-blue-600 font-medium transition-colors">Noticias</a>
             <a href="#contacto" class="text-slate-700 hover:text-blue-600 font-medium transition-colors">Contacto</a>
           </div>
@@ -114,9 +114,9 @@ onMounted(() => {
           <div v-if="mobileMenuOpen" class="md:hidden py-4 border-t border-slate-200">
             <div class="flex flex-col gap-4">
               <a href="#inicio" class="text-slate-700 hover:text-blue-600 font-medium transition-colors py-2">Inicio</a>
-              <a href="#nosotros" class="text-slate-700 hover:text-blue-600 font-medium transition-colors py-2">Nosotros</a>
+              
               <a href="#academico" class="text-slate-700 hover:text-blue-600 font-medium transition-colors py-2">Académico</a>
-              <a href="#admision" class="text-slate-700 hover:text-blue-600 font-medium transition-colors py-2">Admisión</a>
+              
               <a href="#noticias" class="text-slate-700 hover:text-blue-600 font-medium transition-colors py-2">Noticias</a>
               <a href="#contacto" class="text-slate-700 hover:text-blue-600 font-medium transition-colors py-2">Contacto</a>
               <button 
@@ -162,7 +162,7 @@ onMounted(() => {
             <div class="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl blur-3xl opacity-20"></div>
             <div class="relative rounded-3xl overflow-hidden shadow-2xl border-8 border-white">
               <img 
-                src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&q=80" 
+                src="https://i.postimg.cc/8zr17MTW/Gemini-Generated-Image-im3eppim3eppim3e.png" 
                 alt="Estudiantes en el campus"
                 class="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
               />
@@ -276,7 +276,7 @@ onMounted(() => {
             <div class="flex items-center gap-3 mb-4">
               <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
                 <img 
-                  src="https://i.postimg.cc/Px9xM3Y4/logo-Colegio-Arica.png" 
+                  src="https://i.postimg.cc/nrQmRMvz/logo-Colegio-Arica.png" 
                   alt="Colegio Arica"
                   class="w-10 h-10 object-contain"
                 />

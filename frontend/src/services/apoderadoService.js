@@ -1,25 +1,27 @@
-import axios from 'axios'
+import axios from "axios";
 
-const API_URL = 'http://localhost:3000/apoderado'
+const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
-const token = () => localStorage.getItem('token')
+function authHeaders() {
+  return { Authorization: `Bearer ${localStorage.getItem("token")}` };
+}
 
-export const apoderadoService = {
-  obtenerNotificaciones() {
-    return axios.get(`${API_URL}/notificaciones`, {
-      headers: { Authorization: `Bearer ${token()}` }
-    })
-  },
-
-  marcarTodasLeidas() {
-    return axios.put(`${API_URL}/notificaciones/leidas`, {}, {
-      headers: { Authorization: `Bearer ${token()}` }
-    })
-  },
-
-  confirmarAsistencia(notificacionId) {
-    return axios.put(`${API_URL}/notificaciones/${notificacionId}/confirmar`, {}, {
-      headers: { Authorization: `Bearer ${token()}` }
-    })
+async function safeRequest(request) {
+  try {
+    return await request;
+  } catch (err) {
+    console.error("❌ Error en apoderadoService:", err);
+    return { data: null, error: err };
   }
 }
+
+export const apoderadoService = {
+  obtenerNotificaciones: () =>
+    safeRequest(axios.get(`${API}/api/apoderado/notificaciones`, { headers: authHeaders() })),
+
+  marcarTodasLeidas: () =>
+    safeRequest(axios.put(`${API}/api/apoderado/notificaciones/leidas`, {}, { headers: authHeaders() })),
+
+  confirmarAsistencia: (id) =>
+    safeRequest(axios.put(`${API}/api/apoderado/notificaciones/${id}/confirmar`, {}, { headers: authHeaders() }))
+};

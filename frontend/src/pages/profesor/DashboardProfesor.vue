@@ -109,6 +109,22 @@ async function verDetalle(id) {
     cargandoDetalle.value = false
   }
 }
+// ==================== ELIMINAR COMUNICADO ====================
+async function eliminarComunicado(id) {
+  try {
+    const res = await profesorService.deshabilitarComunicado(id)
+
+    if (res?.data?.ok) {
+      console.log('✅ Comunicado deshabilitado:', res.data.message)
+      await cargarDatos()
+    } else {
+      console.warn('⚠️ No se pudo deshabilitar el comunicado:', res?.error || res?.data)
+    }
+  } catch (err) {
+    console.error('❌ Error al deshabilitar comunicado:', err)
+  }
+}
+
 
 function cerrarDetalle() {
   modalDetalle.value = false
@@ -424,11 +440,15 @@ onUnmounted(() => {
         <div class="p-6 border-b border-slate-800/50">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="w-11 h-11 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 transform hover:scale-110 hover:rotate-3 transition-all duration-300 cursor-pointer">
-                <span class="text-lg font-black text-white transform -rotate-12">EC</span>
+              <div class="w-20 h-20 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 transform hover:scale-110 hover:rotate-3 transition-all duration-300 cursor-pointer">
+                <img 
+                src="https://i.postimg.cc/nrQmRMvz/logo-Colegio-Arica.png" 
+                alt="Logo Colegio Arica"
+                class="w-full h-full object-contain"
+              />
               </div>
               <div>
-                <span class="text-lg font-bold text-white block">Web EduCom</span>
+                <span class="text-lg font-bold text-white block">Colegio Arica</span>
                 <span class="text-xs text-slate-500">Gestión Educativa</span>
               </div>
             </div>
@@ -758,13 +778,26 @@ onUnmounted(() => {
                         </span>
                       </td>
                       <td class="px-6 py-4 text-center">
-                        <button 
-                          @click="verDetalle(item.id)"
-                          class="p-2.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-all hover:scale-110 active:scale-100 group/btn"
-                        >
-                          <i data-lucide="eye" class="w-4 h-4 group-hover/btn:scale-110 transition-transform"></i>
-                        </button>
-                      </td>
+  <div class="flex justify-center gap-2">
+    <!-- Ver detalle -->
+    <button 
+      @click="verDetalle(item.id)"
+      class="p-2.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-all hover:scale-110 active:scale-100 group/btn"
+    >
+      <i data-lucide="eye" class="w-4 h-4 group-hover/btn:scale-110 transition-transform"></i>
+    </button>
+
+    <!-- Eliminar comunicado -->
+    <button 
+  @click="eliminarComunicado(item.id)"
+  class="p-2.5 text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded-lg transition-all hover:scale-110 active:scale-100 group/btn"
+>
+  <i data-lucide="trash-2" class="w-4 h-4 group-hover/btn:scale-110 transition-transform"></i>
+</button>
+
+  </div>
+</td>
+
                     </tr>
                   </tbody>
                 </table>

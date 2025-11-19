@@ -1,73 +1,58 @@
 // ==========================================
-// 🌐 Servidor principal - EduCom API
+// 🌐 Servidor Principal - EduCom Backend
 // ==========================================
-
 import express from 'express'
 import cors from 'cors'
-import 'dotenv/config'
+import morgan from 'morgan'
+import dotenv from 'dotenv'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
-// ==========================================
-// 🔹 Importación de Rutas
-// ==========================================
-import authRoutes from './routes/auth.routes.js'
-import usuarioRoutes from './routes/usuario.routes.js'
-import notificacionRoutes from './routes/notificacion.routes.js'
-import profesorRoutes from './routes/profesor.routes.js'
-import apoderadoRoutes from './routes/apoderado.routes.js'
+// Inicializar variables de entorno
+dotenv.config()
 
-// ==========================================
-// 🚀 Inicialización de Express
-// ==========================================
+// Crear servidor Express
 const app = express()
 
-// ==========================================
-// 🔒 Middlewares globales
-// ==========================================
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true
-  })
-)
-app.use(express.json())
+// Middlewares globales
+app.use(cors())
+app.use(express.json({ limit: '10mb' }))
+app.use(morgan('dev'))
+
+// Resolver rutas absolutas (necesario para ESM)
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // ==========================================
-// 🏠 Ruta base (verificación del servidor)
+// 📌 Importar rutas
 // ==========================================
-app.get('/', (_, res) => {
+import authRoutes from './routes/auth.routes.js'
+import profesorRoutes from './routes/profesor.routes.js'
+import apoderadoRoutes from './routes/apoderado.routes.js'
+import tiRoutes from './routes/ti.routes.js'
+
+// ==========================================
+// 🛣️ Montar rutas
+// ==========================================
+app.use('/api/auth', authRoutes)
+app.use('/api/profesores', profesorRoutes)
+app.use('/api/apoderado', apoderadoRoutes)
+app.use('/api/ti', tiRoutes)
+
+// Ruta base
+app.get('/', (req, res) => {
   res.json({
-    ok: true,
-    name: 'EduCom API',
-    version: '1.0.0',
-    author: 'J2N Software',
-    status: 'running'
+    message: 'EduCom Backend funcionando correctamente 🚀'
   })
 })
 
 // ==========================================
-// 📦 Rutas principales del sistema
-// ==========================================
-app.use('/auth', authRoutes)
-app.use('/users', usuarioRoutes)
-app.use('/notificaciones', notificacionRoutes)
-app.use('/profesores', profesorRoutes)
-app.use('/apoderado', apoderadoRoutes)
-
-// ==========================================
-// ⚠️ Manejo global de errores
-// ==========================================
-app.use((err, req, res, next) => {
-  console.error('❌ Error no manejado:', err)
-  res.status(500).json({
-    error: 'Error interno del servidor',
-    detalle: process.env.NODE_ENV === 'development' ? err.message : undefined
-  })
-})
-
-// ==========================================
-// 🟢 Inicio del servidor
+// 🔥 Iniciar servidor
 // ==========================================
 const PORT = process.env.PORT || 3000
+
 app.listen(PORT, () => {
-  console.log(`✅ Servidor EduCom corriendo en http://localhost:${PORT}`)
+  console.log(`🚀 Servidor EduCom corriendo en http://localhost:${PORT}`)
 })
+
+export default app

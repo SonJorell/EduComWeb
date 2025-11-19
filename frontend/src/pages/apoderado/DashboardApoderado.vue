@@ -29,14 +29,7 @@
           <!-- Botones de acción -->
           <div class="flex items-center gap-3">
             <!-- Botón volver -->
-            <button
-              @click="router.push('/apoderado/dashboard')"
-              class="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-all border border-slate-700 hover:border-blue-500 active:scale-95 font-semibold"
-              title="Volver al inicio"
-            >
-              <i data-lucide="arrow-left" class="w-4 h-4"></i>
-              <span class="hidden sm:inline text-sm">Volver</span>
-            </button>
+            
 
             <!-- Cerrar sesión -->
             <button

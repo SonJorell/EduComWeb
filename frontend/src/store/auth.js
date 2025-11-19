@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
-const API_URL = 'http://localhost:3000'
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -13,17 +13,20 @@ export const useAuthStore = defineStore('auth', {
     // 🔐 Iniciar sesión
     async login(email, password) {
       try {
-        const res = await axios.post(`${API_URL}/auth/login`, { email, password })
+        // ⛔️ Ruta corregida → /api/auth/login
+        const res = await axios.post(`${API_URL}/api/auth/login`, {
+          email,
+          password
+        })
 
-        // Puede venir como accessToken o token según backend
-        const token = res.data.accessToken || res.data.token
+        const token = res.data.token || res.data.accessToken
         const user = res.data.user
 
-        // Guarda en el estado
+        // Guardar en estado
         this.token = token
         this.user = user
 
-        // Guarda en localStorage para persistencia
+        // Guardar en localStorage
         localStorage.setItem('token', token)
         localStorage.setItem('user', JSON.stringify(user))
         localStorage.setItem('role', user.rol || user.role || '')
@@ -31,8 +34,10 @@ export const useAuthStore = defineStore('auth', {
         console.log('✅ Usuario autenticado:', user)
 
         return user
+
       } catch (error) {
         console.error('❌ Error al iniciar sesión:', error.response?.data || error.message)
+
         throw new Error(error.response?.data?.error || 'Error al iniciar sesión')
       }
     },
@@ -46,12 +51,12 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('role')
     },
 
-    // 🧠 Verificar si el usuario sigue autenticado
+    // 🧠 Verificar si sigue autenticado
     isAuthenticated() {
       return !!this.token
     },
 
-    // 🔎 Obtener rol actual (normalizado)
+    // 🔍 Obtener rol normalizado
     getRole() {
       return (this.user?.rol || localStorage.getItem('role') || '').toLowerCase()
     }

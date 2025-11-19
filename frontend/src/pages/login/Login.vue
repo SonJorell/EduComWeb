@@ -29,7 +29,7 @@
             <!-- Container del logo -->
             <div class="relative w-28 h-28 bg-white/95 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/20 transform hover:scale-105 transition-all duration-300 mx-auto border-2 border-slate-700/30 p-3">
               <img 
-                src="https://i.postimg.cc/Px9xM3Y4/logo-Colegio-Arica.png" 
+                src="https://i.postimg.cc/nrQmRMvz/logo-Colegio-Arica.png" 
                 alt="Logo Colegio Arica"
                 class="w-full h-full object-contain"
               />

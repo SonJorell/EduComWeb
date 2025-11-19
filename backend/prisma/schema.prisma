@@ -110,34 +110,29 @@ model Notificacion {
   id             Int               @id @default(autoincrement())
   titulo         String?
   mensaje        String
-  tipo           TipoNotificacion? // Ej: REUNION, AVISO, ANOTACION, FELICITACION
-  prioridad      String?           // Alta, Media, Baja
+  tipo           TipoNotificacion?
+  prioridad      String?
   emisorId       Int
   emisor         Usuario           @relation("EmisorNotificacion", fields: [emisorId], references: [id])
   createdAt      DateTime          @default(now())
   programadaPara DateTime?
-  
-  cursosDestino  Json?             // 👈 Nuevo campo (almacena los cursos destino en formato JSON)
-
+  cursosDestino  Json?
   recepciones    Recepcion[]
+  activo         Boolean           @default(true)
 }
 
-// ======================================================
-// 👨‍👩‍👧 Relación entre apoderado y notificación recibida
-// ======================================================
 model Recepcion {
   id              Int          @id @default(autoincrement())
   notificacionId  Int
   apoderadoId     Int
-
   notificacion    Notificacion @relation(fields: [notificacionId], references: [id])
   apoderado       Apoderado    @relation(fields: [apoderadoId], references: [id])
-
   leido           Boolean      @default(false)
   confirmado      Boolean      @default(false)
   leidoAt         DateTime?
   confirmadoAt    DateTime?
-
+  activo          Boolean      @default(true)
   @@unique([notificacionId, apoderadoId])
 }
+
 

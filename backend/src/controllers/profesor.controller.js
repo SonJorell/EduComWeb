@@ -75,10 +75,11 @@ export async function notificacionesProfesor(req, res) {
     const profesorId = req.user.sub
 
     const notificaciones = await prisma.notificacion.findMany({
-      where: { emisorId: profesorId },
-      orderBy: { createdAt: 'desc' },
-      include: { recepciones: true }
-    })
+  where: { emisorId: profesorId, activo: true }, // ✅ filtro agregado
+  orderBy: { createdAt: 'desc' },
+  include: { recepciones: true }
+})
+
 
     const result = []
     for (const n of notificaciones) {
@@ -233,8 +234,9 @@ export async function detalleNotificacion(req, res) {
       }
     })
 
-    if (!notificacion)
-      return res.status(404).json({ error: 'Notificación no encontrada.' })
+    if (!notificacion || !notificacion.activo)
+  return res.status(404).json({ error: 'Notificación no encontrada o inactiva.' })
+
 
     if (notificacion.emisorId !== profesorId)
       return res.status(403).json({ error: 'No autorizado.' })
@@ -283,11 +285,12 @@ export async function comunicadosRecientes(req, res) {
     const profesorId = req.user.sub
 
     const recientes = await prisma.notificacion.findMany({
-      where: { emisorId: profesorId },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-      include: { recepciones: { select: { leido: true, confirmado: true } } }
-    })
+  where: { emisorId: profesorId, activo: true }, // ✅ filtro agregado
+  orderBy: { createdAt: 'desc' },
+  take: 5,
+  include: { recepciones: { select: { leido: true, confirmado: true } } }
+})
+
 
     const data = []
     for (const n of recientes) {
@@ -328,3 +331,45 @@ export async function comunicadosRecientes(req, res) {
     res.status(500).json({ error: 'Error al obtener comunicados recientes.' })
   }
 }
+// ==========================
+// 🧩 Deshabilitar Comunicado (soft delete global)
+// ==========================
+export const deshabilitarComunicado = async (req, res) => {
+  try {
+    const { id } = req.params
+    const profesorId = req.user.sub
+
+    // Verificar que el comunicado existe y pertenece al profesor
+    const comunicado = await prisma.notificacion.findUnique({
+      where: { id: Number(id) },
+      include: { recepciones: true }
+    })
+
+    if (!comunicado)
+      return res.status(404).json({ message: 'Comunicado no encontrado' })
+
+    if (comunicado.emisorId !== profesorId)
+      return res.status(403).json({ message: 'No autorizado para modificar este comunicado' })
+
+    // 1️⃣ Marcar comunicado como inactivo
+    await prisma.notificacion.update({
+      where: { id: Number(id) },
+      data: { activo: false }
+    })
+
+    // 2️⃣ Marcar recepciones como inactivas (para todos los apoderados)
+    await prisma.recepcion.updateMany({
+      where: { notificacionId: Number(id) },
+      data: { activo: false }
+    })
+
+    res.json({
+      ok: true,
+      message: 'Comunicado y recepciones deshabilitados correctamente'
+    })
+  } catch (error) {
+    console.error('Error al deshabilitar comunicado:', error)
+    res.status(500).json({ message: 'Error interno al deshabilitar el comunicado' })
+  }
+}
+

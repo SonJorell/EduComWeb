@@ -10,7 +10,8 @@ import {
   apoderadosProfesor,
   enviarNotificacion,
   detalleNotificacion,
-  comunicadosRecientes
+  comunicadosRecientes,
+  deshabilitarComunicado
 } from '../controllers/profesor.controller.js'
 
 // ==========================================
@@ -23,7 +24,7 @@ const router = express.Router()
 // ==========================================
 
 // ✅ Obtener los cursos asignados al profesor
-// Ejemplo: GET /profesores/me/cursos
+// GET /api/profesores/me/cursos
 router.get(
   '/me/cursos',
   requireAuth,
@@ -31,8 +32,8 @@ router.get(
   cursosProfesor
 )
 
-// ✅ Obtener el resumen general del dashboard
-// Ejemplo: GET /profesores/me/resumen
+// ✅ Obtener resumen general del dashboard del profesor
+// GET /api/profesores/me/resumen
 router.get(
   '/me/resumen',
   requireAuth,
@@ -41,7 +42,7 @@ router.get(
 )
 
 // ✅ Listar todas las notificaciones enviadas por el profesor
-// Ejemplo: GET /profesores/me/notificaciones
+// GET /api/profesores/me/notificaciones
 router.get(
   '/me/notificaciones',
   requireAuth,
@@ -49,8 +50,8 @@ router.get(
   notificacionesProfesor
 )
 
-// ✅ Obtener comunicados recientes (para el dashboard principal)
-// Ejemplo: GET /profesores/me/comunicados
+// ✅ Obtener comunicados recientes (para el dashboard)
+// GET /api/profesores/me/comunicados
 router.get(
   '/me/comunicados',
   requireAuth,
@@ -59,7 +60,7 @@ router.get(
 )
 
 // ✅ Obtener los apoderados asociados a los cursos del profesor
-// Ejemplo: GET /profesores/me/apoderados
+// GET /api/profesores/me/apoderados
 router.get(
   '/me/apoderados',
   requireAuth,
@@ -67,8 +68,8 @@ router.get(
   apoderadosProfesor
 )
 
-// ✅ Enviar una nueva notificación o comunicado
-// Ejemplo: POST /profesores/notificaciones
+// ✅ Crear una nueva notificación o comunicado
+// POST /api/profesores/notificaciones
 router.post(
   '/notificaciones',
   requireAuth,
@@ -77,12 +78,21 @@ router.post(
 )
 
 // ✅ Obtener el detalle completo de una notificación específica
-// Ejemplo: GET /profesores/notificaciones/:id
+// GET /api/profesores/notificaciones/:id
 router.get(
   '/notificaciones/:id',
   requireAuth,
   requireRole('Profesor'),
   detalleNotificacion
+)
+
+// ✅ Deshabilitar (soft delete) un comunicado sin eliminarlo físicamente
+// PUT /api/profesores/notificaciones/:id/deshabilitar
+router.put(
+  '/notificaciones/:id/deshabilitar',
+  requireAuth,
+  requireRole('Profesor'),
+  deshabilitarComunicado
 )
 
 // ==========================================
