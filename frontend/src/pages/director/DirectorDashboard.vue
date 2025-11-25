@@ -257,15 +257,15 @@ async function loadCursoDetalle () {
 }
 
 // PDF
-async function exportToPDF () {
-  const canvas = await html2canvas(dashboardRef.value, { scale: 2 })
-  const imgData = canvas.toDataURL("image/png")
-  const pdf = new jsPDF("p", "mm", "a4")
-  const w = pdf.internal.pageSize.width
-  const h = (canvas.height * w) / canvas.width
-
-  pdf.addImage(imgData, "PNG", 0, 0, w, h)
-  pdf.save("dashboard-direccion.pdf")
+// Reemplaza tu función exportToPDF con esto:
+function exportToPDF() {
+  // Cambiamos el título temporalmente para el nombre del archivo
+  const originalTitle = document.title
+  document.title = `Reporte_Direccion_${new Date().toISOString().slice(0,10)}`
+  
+  window.print()
+  
+  document.title = originalTitle
 }
 
 // INIT
@@ -289,3 +289,92 @@ onMounted(async () => {
   }, 10000)
 })
 </script>
+<style scoped>
+/* ... tus estilos actuales ... */
+
+/* ========================================== */
+/* 🖨️ ESTILOS PARA PDF / IMPRESIÓN         */
+/* ========================================== */
+@media print {
+  /* 1. Configuración General */
+  @page {
+    margin: 10mm;
+    size: A4; /* O landscape si prefieres */
+  }
+
+  /* 2. Ocultar elementos de UI no deseados */
+  button, 
+  select, 
+  header button, /* Botones del header */
+  .no-print {
+    display: none !important;
+  }
+
+  /* 3. Transformar Fondo Oscuro a Papel Blanco */
+  body, 
+  .min-h-screen, 
+  div {
+    background: white !important;
+    background-image: none !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* 4. Ajustar Contenedores (Quitar efectos Glass) */
+  .bg-slate-900, 
+  .bg-slate-950, 
+  .glass {
+    background-color: white !important;
+    border: 1px solid #e2e8f0 !important; /* Borde gris suave */
+    border-radius: 8px !important;
+    margin-bottom: 20px !important;
+    break-inside: avoid; /* Evita que una tarjeta se corte a la mitad */
+  }
+
+  /* 5. Ajustar Textos */
+  h1, h2, h3, p, label, span {
+    color: #1e293b !important; /* Slate-800 */
+    -webkit-text-fill-color: #1e293b !important; /* Quitar gradientes de texto */
+  }
+  
+  h1, h2 {
+    border-bottom: 2px solid #3b82f6;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+  }
+
+  /* 6. Ajustar Grids para papel */
+  .grid {
+    display: block !important; /* O mantener grid si cabe */
+  }
+  
+  /* Forzar tarjetas de resumen en línea si es posible */
+  .grid-cols-1.md\:grid-cols-3 {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* 7. Tablas */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  
+  th, td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 8px !important;
+    color: black !important;
+  }
+
+  thead {
+    background-color: #f1f5f9 !important;
+  }
+
+  /* 8. Resetear scrollbars */
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+}
+</style>
