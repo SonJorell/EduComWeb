@@ -1,113 +1,85 @@
+# 📘 EduCom Web – Plataforma de Gestión Escolar
 
-# 📘 EduCom Web – Plataforma de Comunicación Colegio Arica
+<div align="center">
 
-**Desarrollado por:** J2N Software  
-**Versión:** 1.0.0  
-**Líder de Proyecto:** [Jorell Bermejo Arias](https://github.com/JorellBermejo)  
-**Última actualización:** Noviembre 2025  
+![Version](https://img.shields.io/badge/versión-1.0.0-blue.svg?style=for-the-badge)
+![Status](https://img.shields.io/badge/estado-Finalizado-green.svg?style=for-the-badge)
+![Tech](https://img.shields.io/badge/stack-MEVN-green.svg?style=for-the-badge)
+![License](https://img.shields.io/badge/licencia-Privada-red.svg?style=for-the-badge)
+
+**Transformación digital para la comunicación entre el Colegio Arica y su comunidad.**
+
+[Ver Demo](#) · [Reportar Bug](https://github.com/J2N-Software/educom-web/issues) · [Solicitar Feature](https://github.com/J2N-Software/educom-web/issues)
+
+</div>
 
 ---
 
 ## 🧩 Descripción General
 
-**EduCom Web** es una plataforma desarrollada por **J2N Software** para optimizar la comunicación entre el **Colegio Arica** y los **apoderados**.  
-El sistema permite enviar y confirmar notificaciones institucionales en tiempo real, garantizando trazabilidad y transparencia, mejorando así los procesos administrativos y la participación familiar.
+**EduCom Web** es una solución integral desarrollada por **J2N Software** para modernizar los procesos administrativos y comunicacionales del **Colegio Arica**.
+
+El sistema elimina las barreras de la comunicación tradicional, centralizando la información en un entorno seguro y rápido. Permite a los docentes gestionar cursos y asistencia, mientras que los apoderados reciben notificaciones en tiempo real con confirmación de lectura obligatoria, garantizando la trazabilidad de la información.
 
 ---
 
-## 🚀 Objetivos del Proyecto
+## 📸 Galería del Sistema
 
-- Centralizar la comunicación entre colegio y apoderados.  
-- Garantizar la **confirmación de lectura** de comunicados.  
-- Permitir la **gestión de usuarios, cursos y mensajes**.  
-- Ofrecer un **panel administrativo moderno e intuitivo**.  
-- Impulsar la **transformación digital educativa** en el Colegio Arica.
+> **Nota:** El sistema cuenta con una interfaz basada en *Glassmorphism* y modo oscuro para una experiencia visual moderna y cómoda.
 
----
+| **1. Home (Landing Page)** | **2. Acceso y Seguridad** |
+|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/6ded73bc-d19d-42cf-96f2-549529ced988" width="100%" alt="Home Page" /> | <img src="https://github.com/user-attachments/assets/60648b43-f29a-401e-bcb9-79ad57b63495" width="100%" alt="Login Segura" /> |
+| *Portal público informativo con diseño moderno.* | *Autenticación segura con JWT y validación de roles.* |
 
-## 🏗️ Arquitectura del Proyecto
+| **3. Portal del Profesor** | **4. Portal del Apoderado** |
+|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/78b30c77-3573-4212-9cc1-f030006b25f5" width="100%" alt="Dashboard Profesor" /> | <img src="https://github.com/user-attachments/assets/4b3cd1da-7048-41f1-8e81-0f397ca63e9f" width="100%" alt="Dashboard Apoderado" /> |
+| *Gestión de cursos, métricas y envío de comunicados.* | *Bandeja de entrada en tiempo real y alertas.* |
 
-Frontend (Vite + Vue.js)
-│
-├── Componentes UI → TailwindCSS + Lucide Icons
-│
-Backend (Node.js + Express)
-│
-├── ORM → Prisma
-├── Autenticación → JWT Tokens + Middleware seguro
-│
-Base de Datos (PostgreSQL)
-│
-Infraestructura → Servidor local + OneDrive Sync
-
+| **5. Dashboard de Administración (TI)** | **6. Portal del Director** |
+|:---:|:---:|
+| <img src="https://github.com/user-attachments/assets/50daef34-ab73-4dbf-8a23-fa7514bdf581" width="100%" alt="Dashboard TI" /> | <img src="https://github.com/user-attachments/assets/eeda7157-9f5f-4288-ab4e-0e4e92c72260" width="100%" alt="Dashboard Director" /> |
+| *Control total de usuarios, base de datos y auditoría.* | *Visión estratégica y gestión institucional.* |
 
 ---
 
-## ⚙️ Tecnologías Utilizadas
+## 🚀 Características Clave
 
-| Categoría | Tecnología |
-|------------|-------------|
-| **Frontend** | Vue.js 3, Vite, TailwindCSS |
-| **Backend** | Node.js, Express, Prisma ORM |
-| **Base de Datos** | PostgreSQL |
-| **Autenticación** | JSON Web Tokens (JWT) |
-| **Infraestructura** | OneDrive, GitHub, Firebase Hosting (demo) |
-| **Gestión de Proyecto** | Scrum + ITIL 4 |
+- **📡 Comunicación en Tiempo Real:** Actualización automática (Polling/Push) de notificaciones sin recargar la página.
+- **✅ Trazabilidad:** Confirmación de lectura y asistencia digital por parte de los apoderados.
+- **🛡️ Seguridad Robusta:** Encriptación de contraseñas (Bcrypt), JWT para sesiones y protección contra borrados accidentales.
+- **👥 Gestión de Roles:** Permisos granulares para Administradores, TI, Profesores, Directores y Apoderados.
+- **📊 Auditoría Completa:** Registro detallado de todas las acciones realizadas en el sistema (Logs).
 
 ---
 
-## 💡 Características Principales
+## 🛠️ Stack Tecnológico
 
-- 📩 Envío y confirmación de comunicados institucionales.  
-- 🧑‍🏫 Gestión de cursos, docentes y apoderados.  
-- 🔒 Autenticación por roles con JWT.  
-- ⚡ Carga rápida mediante Vite.  
-- 📊 Reportes con métricas educativas.  
-- 🧾 Historial y seguimiento de notificaciones.
+El proyecto utiliza una arquitectura moderna y escalable:
 
----
+### Frontend
+- **Framework:** ![Vue.js](https://img.shields.io/badge/-Vue.js_3-4FC08D?logo=vue.js&logoColor=white)
+- **Build Tool:** ![Vite](https://img.shields.io/badge/-Vite-646CFF?logo=vite&logoColor=white)
+- **Estilos:** ![Tailwind CSS](https://img.shields.io/badge/-Tailwind_CSS-38B2AC?logo=tailwind-css&logoColor=white)
+- **Iconos:** Lucide Vue
 
-## 🧠 Metodología de Trabajo
-
-El desarrollo se realizó bajo un enfoque **ágil (Scrum)** con entregas iterativas y reuniones quincenales con el cliente.  
-Además, se aplicaron prácticas de **ITIL 4** en la gestión de incidentes, cambios y aseguramiento de calidad del servicio.
-
----
-
-## 👥 Equipo de Desarrollo
-
-| Integrante | Rol | Responsabilidades |
-|-------------|------|-------------------|
-| **Jorell Antonio Bermejo Arias** | Líder de Proyecto / Backend Lead | Arquitectura, autenticación y despliegue |
-| **Nicolás Benjamín Ponce Hernández** | Scrum Master / Frontend | Coordinación ágil y desarrollo UI |
-| **Juan David Camilo Churata Mamani** | QA / Tester | Pruebas funcionales y documentación |
+### Backend
+- **Runtime:** ![Node.js](https://img.shields.io/badge/-Node.js-339933?logo=node.js&logoColor=white)
+- **Framework:** ![Express](https://img.shields.io/badge/-Express.js-000000?logo=express&logoColor=white)
+- **ORM:** ![Prisma](https://img.shields.io/badge/-Prisma-2D3748?logo=prisma&logoColor=white)
+- **Base de Datos:** MySQL / PostgreSQL
+- **Seguridad:** JSON Web Tokens (JWT) + Bcrypt
 
 ---
 
-## 📦 Instalación y Ejecución
+## 🏗️ Arquitectura del Sistema
 
-### 🔧 Requisitos Previos
-- Node.js ≥ 18  
-- PostgreSQL ≥ 14  
-- Git  
-- Navegador moderno (Chrome, Firefox o Edge)
-
-### 💻 Pasos de Instalación
-
-```bash
-# Clonar el repositorio
-git clone https://github.com/J2N-Software/educom-web.git
-
-# Instalar dependencias Frontend
-cd educom-web/frontend
-npm install
-npm run dev
-
-# Instalar dependencias Backend
-cd ../backend
-npm install
-npm run dev
-
-Accede al entorno local en:
-👉 http://localhost:5173
-
+```mermaid
+graph TD
+    A["Cliente Web (Vue 3)"] -->|"REST API / Axios"| B["Servidor (Express.js)"]
+    B -->|"Auth Middleware"| C{"¿JWT Válido?"}
+    C -->|Sí| D[Controladores]
+    C -->|No| E["Error 401 Unauthorized"]
+    D -->|"Prisma ORM"| F[("Base de Datos")]
+    D -->|"Audit Logs"| F
