@@ -9,8 +9,6 @@
 
 **Transformación digital para la comunicación entre el Colegio Arica y su comunidad.**
 
-[Ver Demo](#) · [Reportar Bug](https://github.com/J2N-Software/educom-web/issues) · [Solicitar Feature](https://github.com/J2N-Software/educom-web/issues)
-
 </div>
 
 ---
@@ -56,20 +54,23 @@ El sistema elimina las barreras de la comunicación tradicional, centralizando l
 
 ## 🛠️ Stack Tecnológico
 
-El proyecto utiliza una arquitectura moderna y escalable:
+El proyecto utiliza una arquitectura moderna **MEVN** (MySQL - Express - Vue - Node) desacoplada:
 
-### Frontend
-- **Framework:** ![Vue.js](https://img.shields.io/badge/-Vue.js_3-4FC08D?logo=vue.js&logoColor=white)
-- **Build Tool:** ![Vite](https://img.shields.io/badge/-Vite-646CFF?logo=vite&logoColor=white)
-- **Estilos:** ![Tailwind CSS](https://img.shields.io/badge/-Tailwind_CSS-38B2AC?logo=tailwind-css&logoColor=white)
-- **Iconos:** Lucide Vue
+### 🎨 Frontend (Cliente)
+| Categoría | Tecnologías |
+| :--- | :--- |
+| **Core** | ![Vue.js](https://img.shields.io/badge/Vue.js_3-4FC08D?logo=vue.js&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white) |
+| **Estilos & UI** | ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?logo=tailwind-css&logoColor=white) ![HeadlessUI](https://img.shields.io/badge/Headless_UI-66E3FF?logo=headlessui&logoColor=black) |
+| **Lógica & Estado** | ![Pinia](https://img.shields.io/badge/Pinia-FFD11B?logo=pinia&logoColor=black) ![Vue Router](https://img.shields.io/badge/Vue_Router-4FC08D?logo=vue.js&logoColor=white) ![Axios](https://img.shields.io/badge/Axios-5A29E4?logo=axios&logoColor=white) |
+| **Reportes** | ![Chart.js](https://img.shields.io/badge/Chart.js-F5788D?logo=chart.js&logoColor=white) ![jsPDF](https://img.shields.io/badge/jsPDF-E34F26?logo=pdf&logoColor=white) |
 
-### Backend
-- **Runtime:** ![Node.js](https://img.shields.io/badge/-Node.js-339933?logo=node.js&logoColor=white)
-- **Framework:** ![Express](https://img.shields.io/badge/-Express.js-000000?logo=express&logoColor=white)
-- **ORM:** ![Prisma](https://img.shields.io/badge/-Prisma-2D3748?logo=prisma&logoColor=white)
-- **Base de Datos:** MySQL / PostgreSQL
-- **Seguridad:** JSON Web Tokens (JWT) + Bcrypt
+### ⚙️ Backend (Servidor)
+| Categoría | Tecnologías |
+| :--- | :--- |
+| **Core** | ![Node.js](https://img.shields.io/badge/Node.js-43853D?logo=node.js&logoColor=white) ![Express.js](https://img.shields.io/badge/Express_5.0-000000?logo=express&logoColor=white) |
+| **Base de Datos** | ![Prisma](https://img.shields.io/badge/Prisma_ORM-2D3748?logo=prisma&logoColor=white) ![MySQL](https://img.shields.io/badge/MySQL-4479A1?logo=mysql&logoColor=white) |
+| **Seguridad** | ![JWT](https://img.shields.io/badge/Json_Web_Token-000000?logo=jsonwebtokens&logoColor=white) ![Bcrypt](https://img.shields.io/badge/Bcrypt-Lock-red) ![CORS](https://img.shields.io/badge/CORS-Enabled-blue) |
+| **DevTools** | ![Nodemon](https://img.shields.io/badge/Nodemon-76D04B?logo=nodemon&logoColor=white) ![Faker.js](https://img.shields.io/badge/Faker.js-Data_Seeding-yellow) ![Morgan](https://img.shields.io/badge/Morgan-Logger-lightgrey) |****
 
 ---
 
