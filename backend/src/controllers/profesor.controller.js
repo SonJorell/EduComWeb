@@ -2,25 +2,50 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 // =====================================================
+// 🛠️ FUNCIÓN AYUDA: Limpiar IDs de cursos (Fix "set")
+// =====================================================
+function extraerIdsCursos(data) {
+  let ids = [];
+  if (!data) return [];
+  if (typeof data === 'object' && !Array.isArray(data) && data.set) {
+    data = data.set;
+  }
+  if (typeof data === 'string') {
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.set) {
+        data = parsed.set;
+      } else {
+        data = parsed;
+      }
+    } catch (e) {
+      return [];
+    }
+  }
+  if (Array.isArray(data)) {
+    ids = data.map(id => Number(id)).filter(n => !isNaN(n));
+  }
+  return ids;
+}
+
+// =====================================================
 // 📚 Obtener cursos asignados al profesor
 // =====================================================
 export async function cursosProfesor(req, res) {
   try {
-    const profesorId = req.user.sub
-
-    const cursos = await prisma.profesorCurso.findMany({
+    const profesorId = Number(req.user.sub);
+    const asignaciones = await prisma.profesorCurso.findMany({
       where: { profesorId },
       include: { curso: true }
-    })
+    });
 
-    if (!cursos.length) {
-      return res.status(404).json({ message: 'No se encontraron cursos asignados.' })
+    if (!asignaciones.length) {
+      return res.status(404).json({ message: 'No se encontraron cursos asignados.' });
     }
-
-    res.json(cursos.map(pc => pc.curso))
+    res.json(asignaciones.map(pc => pc.curso));
   } catch (err) {
-    console.error('cursosProfesor error:', err)
-    res.status(500).json({ error: 'Error interno al obtener cursos.' })
+    console.error('cursosProfesor error:', err);
+    res.status(500).json({ error: 'Error interno al obtener cursos.' });
   }
 }
 
@@ -29,8 +54,7 @@ export async function cursosProfesor(req, res) {
 // =====================================================
 export async function resumenProfesor(req, res) {
   try {
-    const profesorId = req.user.sub
-
+    const profesorId = Number(req.user.sub);
     const cursos = await prisma.profesorCurso.findMany({
       where: { profesorId },
       select: { cursoId: true }
@@ -40,11 +64,9 @@ export async function resumenProfesor(req, res) {
     const totalAlumnos = await prisma.alumno.count({
       where: { cursoId: { in: cursoIds } }
     })
-
     const totalNotificaciones = await prisma.notificacion.count({
       where: { emisorId: profesorId }
     })
-
     const recepciones = await prisma.recepcion.findMany({
       where: { notificacion: { emisorId: profesorId } },
       select: { leido: true, confirmado: true }
@@ -68,18 +90,22 @@ export async function resumenProfesor(req, res) {
 }
 
 // =====================================================
-// 📨 Listar notificaciones enviadas por el profesor
+// 📨 Listar notificaciones enviadas (MODIFICADO)
 // =====================================================
 export async function notificacionesProfesor(req, res) {
   try {
-    const profesorId = req.user.sub
+    const profesorId = Number(req.user.sub);
 
     const notificaciones = await prisma.notificacion.findMany({
-  where: { emisorId: profesorId, activo: true }, // ✅ filtro agregado
-  orderBy: { createdAt: 'desc' },
-  include: { recepciones: true }
-})
-
+      where: { emisorId: profesorId, activo: true },
+      orderBy: { createdAt: 'desc' },
+      // 🔥 IMPORTANTE: Incluir apoderado para sacar el nombre
+      include: { 
+        recepciones: { 
+          include: { apoderado: { select: { nombre: true } } } 
+        } 
+      }
+    })
 
     const result = []
     for (const n of notificaciones) {
@@ -87,20 +113,31 @@ export async function notificacionesProfesor(req, res) {
       const leidos = n.recepciones.filter(r => r.leido).length
       const confirmados = n.recepciones.filter(r => r.confirmado).length
 
-      // Parsear cursosDestino
-      let nombresCursos = []
-      if (n.cursosDestino) {
-        try {
-          const ids = Array.isArray(n.cursosDestino)
-            ? n.cursosDestino
-            : JSON.parse(n.cursosDestino)
-          const cursos = await prisma.curso.findMany({
-            where: { id: { in: ids } },
-            select: { nombre: true }
-          })
-          nombresCursos = cursos.map(c => c.nombre)
-        } catch {
-          nombresCursos = ['Sin curso asignado']
+      const idsCursos = extraerIdsCursos(n.cursosDestino);
+      let destinatariosInfo = [];
+
+      // LÓGICA DE VISUALIZACIÓN
+      if (idsCursos.length > 0) {
+        // Opción A: Es para Cursos
+        const cursos = await prisma.curso.findMany({
+          where: { id: { in: idsCursos } },
+          select: { nombre: true }
+        })
+        destinatariosInfo = cursos.map(c => c.nombre)
+      } else {
+        // Opción B: Es para Apoderados individuales
+        const nombresApoderados = n.recepciones.map(r => r.apoderado.nombre);
+        
+        if (nombresApoderados.length > 0) {
+          // Si son pocos (ej. menos de 3), los mostramos todos
+          if (nombresApoderados.length <= 3) {
+            destinatariosInfo = nombresApoderados.map(nombre => `Apoderado: ${nombre}`);
+          } else {
+            // Si son muchos, mostramos resumen
+            destinatariosInfo = [`${nombresApoderados.length} Apoderados`];
+          }
+        } else {
+          destinatariosInfo = ['Sin destinatarios'];
         }
       }
 
@@ -112,7 +149,7 @@ export async function notificacionesProfesor(req, res) {
         fecha: n.createdAt.toISOString(),
         leido: Math.round((leidos / total) * 100),
         confirmado: Math.round((confirmados / total) * 100),
-        cursos: nombresCursos
+        cursos: destinatariosInfo // Ahora devuelve cursos O nombres de apoderados
       })
     }
 
@@ -124,24 +161,21 @@ export async function notificacionesProfesor(req, res) {
 }
 
 // =====================================================
-// 👨‍👩‍👧 Obtener apoderados vinculados a cursos del profesor
+// 👨‍👩‍👧 Obtener apoderados vinculados
 // =====================================================
 export async function apoderadosProfesor(req, res) {
   try {
-    const profesorId = req.user.sub
-
+    const profesorId = Number(req.user.sub);
     const cursos = await prisma.profesorCurso.findMany({
       where: { profesorId },
       select: { cursoId: true }
     })
     const cursoIds = cursos.map(c => c.cursoId)
-
     const apoderados = await prisma.apoderado.findMany({
       where: { alumnos: { some: { cursoId: { in: cursoIds } } } },
       distinct: ['id'],
       select: { id: true, nombre: true, email: true, telefono: true, rut: true }
     })
-
     res.json(apoderados)
   } catch (err) {
     console.error('apoderadosProfesor error:', err)
@@ -150,47 +184,46 @@ export async function apoderadosProfesor(req, res) {
 }
 
 // =====================================================
-// ✉️ Enviar nueva notificación (a curso o apoderado)
+// ✉️ Enviar nueva notificación
 // =====================================================
 export async function enviarNotificacion(req, res) {
   try {
-    const { titulo, mensaje, tipo, cursoIds = [], apoderadoIds = [] } = req.body
-    const profesorId = req.user.sub
+    const { titulo, mensaje, tipo, cursoIds = [], apoderadoIds = [] } = req.body;
+    const profesorId = Number(req.user.sub);
 
     if (!mensaje || (!cursoIds.length && !apoderadoIds.length)) {
-      return res.status(400).json({
-        error: 'Debe especificar un mensaje y al menos un destinatario (curso o apoderado).'
-      })
+      return res.status(400).json({ error: 'Debe especificar un mensaje y al menos un destinatario.' });
     }
+
+    const cursosLimpios = cursoIds.map(id => Number(id));
 
     const notificacion = await prisma.notificacion.create({
       data: {
         titulo: titulo || '(Sin título)',
         mensaje,
         tipo,
-        emisorId: profesorId,
-        cursosDestino: cursoIds.length ? cursoIds : null
+        activo: true,
+        emisor: { connect: { id: profesorId } },
+        cursosDestino: cursosLimpios 
       }
-    })
+    });
 
-    let apoderadosDestino = []
-
-    if (cursoIds.length > 0) {
+    let apoderadosDestino = [];
+    if (cursosLimpios.length > 0) {
       const alumnos = await prisma.alumno.findMany({
-        where: { cursoId: { in: cursoIds } },
+        where: { cursoId: { in: cursosLimpios } },
         include: { apoderado: true }
-      })
-      apoderadosDestino = alumnos.map(a => a.apoderado)
+      });
+      apoderadosDestino = alumnos.map(a => a.apoderado);
     }
-
     if (apoderadoIds.length > 0) {
-      const apods = await prisma.apoderado.findMany({
-        where: { id: { in: apoderadoIds } }
-      })
-      apoderadosDestino = [...apoderadosDestino, ...apods]
+      const apoderadosManuales = await prisma.apoderado.findMany({
+        where: { id: { in: apoderadoIds.map(Number) } }
+      });
+      apoderadosDestino = [...apoderadosDestino, ...apoderadosManuales];
     }
 
-    const apoderadoIdsUnicos = [...new Set(apoderadosDestino.map(a => a.id))]
+    const apoderadoIdsUnicos = [...new Set(apoderadosDestino.map(a => a.id))];
 
     if (apoderadoIdsUnicos.length > 0) {
       await prisma.recepcion.createMany({
@@ -198,18 +231,18 @@ export async function enviarNotificacion(req, res) {
           notificacionId: notificacion.id,
           apoderadoId: id
         }))
-      })
+      });
     }
 
     res.status(201).json({
-      message: 'Notificación enviada exitosamente.',
+      message: 'Notificación enviada correctamente.',
       notificacionId: notificacion.id,
-      cursosDestino: cursoIds,
       destinatarios: apoderadoIdsUnicos.length
-    })
+    });
+
   } catch (err) {
-    console.error('enviarNotificacion error:', err)
-    res.status(500).json({ error: 'Error interno al enviar la notificación.' })
+    console.error('enviarNotificacion error:', err);
+    res.status(500).json({ error: 'Error interno al enviar notificación.' });
   }
 }
 
@@ -218,8 +251,8 @@ export async function enviarNotificacion(req, res) {
 // =====================================================
 export async function detalleNotificacion(req, res) {
   try {
-    const profesorId = req.user.sub
-    const notificacionId = Number(req.params.id)
+    const profesorId = Number(req.user.sub);
+    const notificacionId = Number(req.params.id);
 
     const notificacion = await prisma.notificacion.findUnique({
       where: { id: notificacionId },
@@ -234,19 +267,12 @@ export async function detalleNotificacion(req, res) {
       }
     })
 
-    if (!notificacion || !notificacion.activo)
-  return res.status(404).json({ error: 'Notificación no encontrada o inactiva.' })
+    if (!notificacion || !notificacion.activo) return res.status(404).json({ error: 'Notificación no encontrada.' })
+    if (notificacion.emisorId !== profesorId) return res.status(403).json({ error: 'No autorizado.' })
 
-
-    if (notificacion.emisorId !== profesorId)
-      return res.status(403).json({ error: 'No autorizado.' })
-
-    const cursoIds = Array.isArray(notificacion.cursosDestino)
-      ? notificacion.cursosDestino
-      : []
-
+    const idsCursos = extraerIdsCursos(notificacion.cursosDestino);
     const cursos = await prisma.curso.findMany({
-      where: { id: { in: cursoIds } },
+      where: { id: { in: idsCursos } },
       select: { nombre: true }
     })
 
@@ -273,46 +299,73 @@ export async function detalleNotificacion(req, res) {
     })
   } catch (err) {
     console.error('detalleNotificacion error:', err)
-    res.status(500).json({ error: 'Error interno al obtener detalle del comunicado.' })
+    res.status(500).json({ error: 'Error interno al obtener detalle.' })
   }
 }
 
 // =====================================================
-// 🕓 Comunicados recientes del profesor (para dashboard)
+// 🕓 Comunicados recientes (MODIFICADO)
 // =====================================================
 export async function comunicadosRecientes(req, res) {
   try {
-    const profesorId = req.user.sub
+    const profesorId = Number(req.user.sub);
 
     const recientes = await prisma.notificacion.findMany({
-  where: { emisorId: profesorId, activo: true }, // ✅ filtro agregado
-  orderBy: { createdAt: 'desc' },
-  take: 5,
-  include: { recepciones: { select: { leido: true, confirmado: true } } }
-})
-
+      where: { emisorId: profesorId, activo: true },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      // 🔥 IMPORTANTE: Incluir el nombre del apoderado
+      include: { 
+        recepciones: { 
+          select: { 
+            leido: true, 
+            confirmado: true,
+            apoderado: { select: { nombre: true } } // <--- ESTO ES NUEVO
+          } 
+        } 
+      }
+    })
 
     const data = []
+    
     for (const n of recientes) {
       const total = n.recepciones.length || 1
       const leidos = n.recepciones.filter(r => r.leido).length
       const confirmados = n.recepciones.filter(r => r.confirmado).length
 
-      let cursos = []
-      if (n.cursosDestino) {
+      const idsCursos = extraerIdsCursos(n.cursosDestino);
+      let destinatariosInfo = [];
+
+      // ================================================
+      // 🧠 LÓGICA INTELIGENTE DE NOMBRES
+      // ================================================
+      if (idsCursos.length > 0) {
+        // CASO 1: Notificación a cursos completos
         try {
-          const ids = Array.isArray(n.cursosDestino)
-            ? n.cursosDestino
-            : JSON.parse(n.cursosDestino)
           const cursosData = await prisma.curso.findMany({
-            where: { id: { in: ids } },
+            where: { id: { in: idsCursos } },
             select: { nombre: true }
           })
-          cursos = cursosData.map(c => c.nombre)
-        } catch {
-          cursos = ['Sin curso asignado']
+          destinatariosInfo = cursosData.map(c => c.nombre)
+        } catch (err) {
+          destinatariosInfo = ['Error datos']
+        }
+      } else {
+        // CASO 2: Notificación a apoderados individuales
+        const nombres = n.recepciones.map(r => r.apoderado.nombre);
+
+        if (nombres.length === 1) {
+            // Solo uno: "Apoderado: Juan Perez"
+            destinatariosInfo = [`Apoderado: ${nombres[0]}`];
+        } else if (nombres.length > 1) {
+            // Varios: "Apoderado: Juan Perez y 2 más" o listarlos todos si prefieres
+            // Para que se vea bien en tu frontend (que muestra lista vertical):
+            destinatariosInfo = nombres.map(nombre => `Apoderado: ${nombre}`);
+        } else {
+            destinatariosInfo = ['Notificación Personal'];
         }
       }
+      // ================================================
 
       data.push({
         id: n.id,
@@ -321,7 +374,7 @@ export async function comunicadosRecientes(req, res) {
         fecha: n.createdAt.toISOString(),
         porcentajeLeido: Math.round((leidos / total) * 100),
         porcentajeConfirmado: Math.round((confirmados / total) * 100),
-        cursos
+        cursos: destinatariosInfo // El frontend renderizará esto como lista
       })
     }
 
@@ -331,45 +384,26 @@ export async function comunicadosRecientes(req, res) {
     res.status(500).json({ error: 'Error al obtener comunicados recientes.' })
   }
 }
+
 // ==========================
-// 🧩 Deshabilitar Comunicado (soft delete global)
+// 🧩 Deshabilitar Comunicado
 // ==========================
 export const deshabilitarComunicado = async (req, res) => {
   try {
     const { id } = req.params
-    const profesorId = req.user.sub
+    const profesorId = Number(req.user.sub);
 
-    // Verificar que el comunicado existe y pertenece al profesor
-    const comunicado = await prisma.notificacion.findUnique({
-      where: { id: Number(id) },
-      include: { recepciones: true }
-    })
+    const comunicado = await prisma.notificacion.findUnique({ where: { id: Number(id) } })
 
-    if (!comunicado)
-      return res.status(404).json({ message: 'Comunicado no encontrado' })
+    if (!comunicado) return res.status(404).json({ message: 'Comunicado no encontrado' })
+    if (comunicado.emisorId !== profesorId) return res.status(403).json({ message: 'No autorizado' })
 
-    if (comunicado.emisorId !== profesorId)
-      return res.status(403).json({ message: 'No autorizado para modificar este comunicado' })
+    await prisma.notificacion.update({ where: { id: Number(id) }, data: { activo: false } })
+    await prisma.recepcion.updateMany({ where: { notificacionId: Number(id) }, data: { activo: false } })
 
-    // 1️⃣ Marcar comunicado como inactivo
-    await prisma.notificacion.update({
-      where: { id: Number(id) },
-      data: { activo: false }
-    })
-
-    // 2️⃣ Marcar recepciones como inactivas (para todos los apoderados)
-    await prisma.recepcion.updateMany({
-      where: { notificacionId: Number(id) },
-      data: { activo: false }
-    })
-
-    res.json({
-      ok: true,
-      message: 'Comunicado y recepciones deshabilitados correctamente'
-    })
+    res.json({ ok: true, message: 'Comunicado deshabilitado' })
   } catch (error) {
-    console.error('Error al deshabilitar comunicado:', error)
-    res.status(500).json({ message: 'Error interno al deshabilitar el comunicado' })
+    console.error('Error al deshabilitar:', error)
+    res.status(500).json({ message: 'Error interno.' })
   }
 }
-

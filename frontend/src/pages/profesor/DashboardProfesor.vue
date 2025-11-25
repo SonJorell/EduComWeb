@@ -2,14 +2,15 @@
 // ==================== IMPORTS ====================
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { createIcons, icons } from 'lucide'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router' // 👈 Agregado useRoute
 import { useAuthStore } from '@/store/auth'
 import { profesorService } from '@/services/profesorService'
-import ModalComunicado from '@/components/ModalComunicado.vue'
+import ModalComunicado from '@/components//profesor/ModalComunicado.vue'
 
 // ==================== REACTIVE STATE ====================
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute() // 👈 Para detectar ruta actual
 
 // Modales
 const modalAbierto = ref(false)
@@ -31,19 +32,38 @@ const comunicados = ref([])
 const comunicadoSeleccionado = ref(null)
 const cursoSeleccionado = ref('Todos')
 
+
 // ==================== COMPUTED PROPERTIES ====================
 const isMobile = computed(() => windowWidth.value < 768)
 const nombreUsuario = computed(() => authStore.user?.nombre || 'Profesor')
 
 const comunicadosFiltrados = computed(() => {
   if (cursoSeleccionado.value === 'Todos') return comunicados.value
-  return comunicados.value.filter(c => c.cursoId === cursoSeleccionado.value)
+
+  return comunicados.value.filter(c =>
+    Array.isArray(c.cursoIds) && c.cursoIds.includes(Number(cursoSeleccionado.value))
+  )
 })
 
+const formatearFecha = (fechaIso) => {
+  if (!fechaIso) return 'Sin fecha';
+  const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
+  return new Date(fechaIso).toLocaleDateString('es-ES', opciones);
+};
+
+// Variable para guardar el identificador del intervalo
+let intervaloActualizacion = null
+
 // ==================== METHODS ====================
-async function cargarDatos() {
+
+// Modificamos la función para aceptar el parámetro "backgroundUpdate"
+async function cargarDatos(backgroundUpdate = false) {
   try {
-    isLoading.value = true
+    // Solo mostramos el spinner grande si NO es una actualización de fondo
+    if (!backgroundUpdate) {
+      isLoading.value = true
+    }
+    
     const [rResumen, rNotif, rCursos, rComunicados] = await Promise.all([
       profesorService.obtenerResumen(),
       profesorService.obtenerNotificaciones(),
@@ -62,37 +82,32 @@ async function cargarDatos() {
     notificaciones.value = rNotif.data || []
     cursos.value = rCursos.data || []
 
-    // --- Comunicados recientes (con formato corregido)
+    // --- Comunicados
     comunicados.value = (rComunicados.data || []).map(c => {
-      const fechaValida = c.fecha
-        ? new Date(c.fecha)
-        : null
-
+      const fechaValida = c.fecha ? new Date(c.fecha) : null
       return {
         id: c.id,
         titulo: c.titulo || 'Sin título',
         tipo: c.tipo || 'General',
         fecha: fechaValida && !isNaN(fechaValida)
-          ? fechaValida.toLocaleDateString('es-CL', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric'
-            })
+          ? fechaValida.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
           : 'Sin fecha',
         porcentajeLeido: Number(c.porcentajeLeido ?? 0),
         porcentajeConfirmado: Number(c.porcentajeConfirmado ?? 0),
         cursoNombre: Array.isArray(c.cursos) ? c.cursos.join(', ') : 'Todos',
-        cursoId: c.cursoId ?? null
+        cursoIds: c.cursoIds ?? []
       }
     })
+
   } catch (err) {
     console.error('Error al cargar datos:', err)
+    if (!backgroundUpdate) alert('Error cargando el dashboard')
   } finally {
-    isLoading.value = false
+    if (!backgroundUpdate) {
+      isLoading.value = false
+    }
   }
 }
-
-
 
 async function verDetalle(id) {
   try {
@@ -109,6 +124,7 @@ async function verDetalle(id) {
     cargandoDetalle.value = false
   }
 }
+
 // ==================== ELIMINAR COMUNICADO ====================
 async function eliminarComunicado(id) {
   try {
@@ -144,9 +160,14 @@ async function confirmarLogout() {
   }
 }
 
+// 🚀 FUNCIÓN MODIFICADA PARA NAVEGAR
 function setActive(item) {
-  activeItem.value = item
+  activeItem.value = item.name
   sidebarOpen.value = false
+  
+  if (item.route) {
+    router.push(item.route)
+  }
 }
 
 function toggleSidebar() {
@@ -172,7 +193,24 @@ function handleEscape(e) {
 // ==================== LIFECYCLE HOOKS ====================
 onMounted(async () => {
   createIcons({ icons })
-  await cargarDatos()
+  
+  // 1. Carga inicial
+  await cargarDatos(false) 
+  
+  // 2. Detectar en qué página estamos para marcar el menú activo
+  const currentPath = route.path
+  // Mapeo manual simple para saber cuál marcar
+  if(currentPath.includes('/comunicados')) activeItem.value = 'Comunicados'
+  else if(currentPath.includes('/cursos')) activeItem.value = 'Cursos'
+  else if(currentPath.includes('/reportes')) activeItem.value = 'Reportes'
+  else if(currentPath.includes('/apoderados')) activeItem.value = 'Apoderados'
+  else activeItem.value = 'Dashboard'
+
+  // 3. Polling
+  intervaloActualizacion = setInterval(() => {
+    console.log('🔄 Actualizando datos en segundo plano...')
+    cargarDatos(true)
+  }, 30000) // Cambiado a 30s para no saturar
   
   window.addEventListener('resize', updateWidth)
   window.addEventListener('keydown', handleEscape)
@@ -183,6 +221,11 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  if (intervaloActualizacion) {
+    clearInterval(intervaloActualizacion)
+    intervaloActualizacion = null
+  }
+  
   window.removeEventListener('resize', updateWidth)
   window.removeEventListener('keydown', handleEscape)
 })
@@ -191,7 +234,6 @@ onUnmounted(() => {
 <template>
   <div class="dashboard-container">
     
-    <!-- Modal Nuevo Comunicado -->
     <Teleport to="body">
       <ModalComunicado 
         :mostrar="modalAbierto" 
@@ -201,7 +243,6 @@ onUnmounted(() => {
       />
     </Teleport>
 
-    <!-- Modal Detalle Comunicado MEJORADO -->
     <Teleport to="body">
       <Transition name="modal">
         <div 
@@ -213,7 +254,6 @@ onUnmounted(() => {
             class="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-3xl w-full max-w-3xl shadow-2xl shadow-blue-500/10 transform transition-all animate-slide-up overflow-hidden"
             @click.stop
           >
-            <!-- Header del Modal -->
             <div class="p-6 border-b border-slate-700/50 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 backdrop-blur-sm">
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-3">
@@ -235,7 +275,6 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Body del Modal -->
             <div v-if="cargandoDetalle" class="p-12 flex flex-col items-center justify-center">
               <div class="relative">
                 <div class="w-16 h-16 border-4 border-slate-700 rounded-full"></div>
@@ -245,13 +284,11 @@ onUnmounted(() => {
             </div>
 
             <div v-else-if="comunicadoSeleccionado" class="p-6 space-y-6 max-h-[65vh] overflow-y-auto custom-scrollbar">
-              <!-- Título destacado -->
               <div class="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-xl p-4 border border-blue-500/20">
                 <h4 class="text-xl font-bold text-white mb-2">{{ comunicadoSeleccionado.titulo }}</h4>
                 <p class="text-slate-300 leading-relaxed whitespace-pre-line">{{ comunicadoSeleccionado.mensaje }}</p>
               </div>
 
-              <!-- Grid de información -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 hover:border-blue-500/30 transition-colors">
                   <div class="flex items-center gap-2 mb-2">
@@ -260,16 +297,18 @@ onUnmounted(() => {
                   </div>
                   <p class="text-white font-semibold text-lg">{{ comunicadoSeleccionado.tipo }}</p>
                 </div>
+                
                 <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 hover:border-indigo-500/30 transition-colors">
                   <div class="flex items-center gap-2 mb-2">
                     <i data-lucide="calendar" class="w-4 h-4 text-indigo-400"></i>
                     <p class="text-xs text-slate-400 uppercase font-semibold">Fecha</p>
                   </div>
-                  <p class="text-white font-semibold text-lg">{{ comunicadoSeleccionado.fecha }}</p>
+                  <p class="text-white font-semibold text-lg">
+                    {{ formatearFecha(comunicadoSeleccionado.fecha) }}
+                  </p>
                 </div>
               </div>
 
-              <!-- Cursos involucrados -->
               <div class="bg-slate-800/30 rounded-xl p-4 border border-slate-700/50">
                 <div class="flex items-center gap-2 mb-3">
                   <i data-lucide="school" class="w-5 h-5 text-purple-400"></i>
@@ -286,7 +325,6 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <!-- Tabla de apoderados -->
               <div v-if="comunicadoSeleccionado.apoderados?.length" class="bg-slate-800/30 rounded-xl p-4 border border-slate-700/50">
                 <div class="flex items-center justify-between mb-4">
                   <div class="flex items-center gap-2">
@@ -337,7 +375,6 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Footer del Modal -->
             <div class="p-6 border-t border-slate-700/50 bg-slate-900/50 backdrop-blur-sm flex justify-between items-center">
               <div class="text-xs text-slate-400">
                 <i data-lucide="info" class="w-3.5 h-3.5 inline mr-1"></i>
@@ -355,7 +392,6 @@ onUnmounted(() => {
       </Transition>
     </Teleport>
 
-    <!-- Modal Confirmación Logout -->
     <Teleport to="body">
       <Transition name="modal">
         <div 
@@ -367,7 +403,6 @@ onUnmounted(() => {
             class="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-3xl w-full max-w-md shadow-2xl shadow-red-500/10 transform transition-all animate-slide-up overflow-hidden"
             @click.stop
           >
-            <!-- Header del Modal -->
             <div class="p-6 border-b border-slate-700/50 bg-gradient-to-r from-red-500/10 to-orange-500/10">
               <div class="flex items-center gap-4">
                 <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center border-2 border-red-400/20 shadow-lg shadow-red-500/30">
@@ -380,7 +415,6 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Body del Modal -->
             <div class="p-6 space-y-4">
               <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
                 <p class="text-slate-200 text-sm mb-2 flex items-center gap-2">
@@ -394,7 +428,6 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Footer del Modal -->
             <div class="p-6 border-t border-slate-700/50 bg-slate-900/50 flex gap-3">
               <button
                 @click="modalLogout = false"
@@ -417,17 +450,14 @@ onUnmounted(() => {
 
     <div class="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-200 min-h-screen font-[Inter] relative overflow-hidden">
       
-      <!-- Efectos de fondo animados -->
       <div class="fixed inset-0 overflow-hidden pointer-events-none">
         <div class="absolute top-1/4 -left-48 w-96 h-96 bg-blue-500/8 rounded-full blur-3xl animate-blob"></div>
         <div class="absolute top-1/3 -right-48 w-96 h-96 bg-indigo-500/8 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
         <div class="absolute -bottom-48 left-1/3 w-96 h-96 bg-purple-500/8 rounded-full blur-3xl animate-blob animation-delay-4000"></div>
         
-        <!-- Grid decorativo -->
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(148,163,184,0.03)_1px,transparent_0)] [background-size:50px_50px]"></div>
       </div>
 
-      <!-- ==================== SIDEBAR ==================== -->
       <aside
         :class="[
           'bg-slate-900/95 backdrop-blur-xl flex flex-col shadow-2xl border-r border-slate-800/50 transition-all duration-300 ease-out',
@@ -436,7 +466,6 @@ onUnmounted(() => {
           'w-64 md:w-72'
         ]"
       >
-        <!-- Logo y título -->
         <div class="p-6 border-b border-slate-800/50">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -463,7 +492,6 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Perfil del usuario -->
         <div class="px-6 py-4 border-b border-slate-800/50 bg-slate-800/30">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
@@ -477,7 +505,6 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Navegación -->
         <nav class="flex-grow px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
           <div class="px-3 py-2 mb-1">
             <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Menú Principal</span>
@@ -485,14 +512,14 @@ onUnmounted(() => {
 
           <button
             v-for="item in [
-              { name: 'Dashboard', icon: 'layout-dashboard' },
-              { name: 'Comunicados', icon: 'send', badge: notificaciones.length || comunicados.length },
-              { name: 'Apoderados', icon: 'users' },
-              { name: 'Cursos', icon: 'book-open', badge: cursos.length },
-              { name: 'Reportes', icon: 'bar-chart-3' }
+              { name: 'Dashboard', icon: 'layout-dashboard', route: '/dashboard-profesor' },
+              { name: 'Comunicados', icon: 'send', badge: notificaciones.length || comunicados.length, route: '/profesor/comunicados' },
+              
+              { name: 'Cursos', icon: 'book-open', badge: cursos.length, route: '/profesor/cursos' },
+              
             ]"
             :key="item.name"
-            @click="setActive(item.name)"
+            @click="setActive(item)"
             :class="[
               'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium group relative active:scale-95',
               activeItem === item.name
@@ -522,9 +549,11 @@ onUnmounted(() => {
           </button>
         </nav>
 
-        <!-- Footer del sidebar -->
         <div class="border-t border-slate-800/50 p-4 space-y-2">
-          <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all group active:scale-95">
+          <button 
+            @click="setActive({ name: 'Configuracion', route: '/profesor/configuracion' })"
+            class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all group active:scale-95"
+          >
             <i data-lucide="settings" class="w-5 h-5 group-hover:rotate-90 transition-transform duration-300"></i>
             <span class="text-sm">Configuración</span>
           </button>
@@ -539,7 +568,6 @@ onUnmounted(() => {
         </div>
       </aside>
 
-      <!-- Overlay móvil -->
       <Transition name="fade">
         <div
           v-if="sidebarOpen"
@@ -548,10 +576,8 @@ onUnmounted(() => {
         ></div>
       </Transition>
 
-      <!-- ==================== CONTENIDO PRINCIPAL ==================== -->
       <main class="md:ml-72 min-h-screen relative z-10">
         
-        <!-- Header fijo -->
         <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-xl border-b border-slate-800/50 shadow-lg">
           <div class="px-4 sm:px-6 py-4">
             <div class="flex items-center justify-between gap-3">
@@ -600,10 +626,8 @@ onUnmounted(() => {
           </div>
         </header>
 
-        <!-- Contenido del dashboard -->
         <div class="p-4 sm:p-6 md:p-8">
           
-          <!-- Loader -->
           <div v-if="isLoading" class="flex flex-col items-center justify-center py-20">
             <div class="relative">
               <div class="w-16 h-16 border-4 border-slate-700 rounded-full"></div>
@@ -613,7 +637,6 @@ onUnmounted(() => {
           </div>
 
           <template v-else>
-            <!-- Tarjetas estadísticas MEJORADAS -->
             <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
               <div
                 v-for="(card, idx) in [
@@ -649,10 +672,8 @@ onUnmounted(() => {
                 :style="{ animationDelay: `${idx * 100}ms` }"
                 class="glass bg-slate-900/60 backdrop-blur-md p-5 sm:p-6 rounded-2xl shadow-xl border border-slate-800/50 hover:border-slate-700/70 transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-blue-500/10 group relative overflow-hidden cursor-pointer animate-slide-up"
               >
-                <!-- Brillo superior -->
                 <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 
-                <!-- Blob de fondo -->
                 <div :class="`absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br ${card.color} opacity-10 rounded-full blur-3xl group-hover:opacity-20 group-hover:scale-150 transition-all duration-500`"></div>
                 
                 <div class="relative z-10">
@@ -679,7 +700,6 @@ onUnmounted(() => {
                     </span>
                   </div>
 
-                  <!-- Barra de progreso mejorada -->
                   <div class="h-2 bg-slate-800/50 rounded-full overflow-hidden">
                     <div
                       :class="`h-full bg-gradient-to-r ${card.color} rounded-full transition-all duration-1000 ease-out relative`"
@@ -692,10 +712,8 @@ onUnmounted(() => {
               </div>
             </section>
 
-            <!-- Tabla de comunicados MEJORADA -->
             <section class="glass bg-slate-900/60 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-800/50 overflow-hidden animate-slide-up" style="animation-delay: 300ms;">
               
-              <!-- Header de la tabla -->
               <div class="p-4 sm:p-6 border-b border-slate-800/50 bg-gradient-to-r from-slate-900/80 to-slate-800/30 backdrop-blur-sm">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                   <div class="flex-1 min-w-0">
@@ -715,7 +733,6 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <!-- Vista Desktop: Tabla -->
               <div class="hidden lg:block overflow-x-auto">
                 <table class="w-full text-sm">
                   <thead class="bg-slate-800/50 text-xs text-slate-400 uppercase tracking-wider backdrop-blur-sm">
@@ -778,32 +795,29 @@ onUnmounted(() => {
                         </span>
                       </td>
                       <td class="px-6 py-4 text-center">
-  <div class="flex justify-center gap-2">
-    <!-- Ver detalle -->
-    <button 
-      @click="verDetalle(item.id)"
-      class="p-2.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-all hover:scale-110 active:scale-100 group/btn"
-    >
-      <i data-lucide="eye" class="w-4 h-4 group-hover/btn:scale-110 transition-transform"></i>
-    </button>
+                        <div class="flex justify-center gap-2">
+                          <button 
+                            @click="verDetalle(item.id)"
+                            class="p-2.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-all hover:scale-110 active:scale-100 group/btn"
+                          >
+                            <i data-lucide="eye" class="w-4 h-4 group-hover/btn:scale-110 transition-transform"></i>
+                          </button>
 
-    <!-- Eliminar comunicado -->
-    <button 
-  @click="eliminarComunicado(item.id)"
-  class="p-2.5 text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded-lg transition-all hover:scale-110 active:scale-100 group/btn"
->
-  <i data-lucide="trash-2" class="w-4 h-4 group-hover/btn:scale-110 transition-transform"></i>
-</button>
+                          <button 
+                            @click="eliminarComunicado(item.id)"
+                            class="p-2.5 text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded-lg transition-all hover:scale-110 active:scale-100 group/btn"
+                          >
+                            <i data-lucide="trash-2" class="w-4 h-4 group-hover/btn:scale-110 transition-transform"></i>
+                          </button>
 
-  </div>
-</td>
+                        </div>
+                      </td>
 
                     </tr>
                   </tbody>
                 </table>
               </div>
 
-              <!-- Vista Móvil: Tarjetas -->
               <div class="lg:hidden">
                 <div
                   v-for="item in comunicadosFiltrados"
@@ -857,7 +871,6 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <!-- Estado vacío -->
               <div v-if="!comunicadosFiltrados.length" class="p-12 text-center text-slate-400">
                 <div class="w-16 h-16 mx-auto mb-4 bg-slate-800/50 rounded-2xl flex items-center justify-center">
                   <i data-lucide="inbox" class="w-8 h-8 text-slate-500"></i>

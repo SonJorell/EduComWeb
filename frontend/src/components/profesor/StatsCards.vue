@@ -74,45 +74,67 @@ import { createIcons, icons } from 'lucide'
 const props = defineProps({
   estadisticas: {
     type: Object,
-    default: () => ({})
+    default: () => ({
+      totalEnviados: 0,
+      tasaConfirmacion: 0,
+      pendientes: 0,
+      cursos: 0,
+      alumnos: 0
+    })
   }
 })
 
-const cards = computed(() => [
-  {
-    title: 'Total Enviados',
-    description: 'Este Mes',
-    value: props.estadisticas?.totalEnviados || '128',
-    subtitle: '+5% vs mes anterior',
-    meta: 'Meta: 120',
-    icon: 'mail',
-    gradient: 'from-blue-500 to-cyan-500',
-    trend: 'up',
-    progress: 85
-  },
-  {
-    title: 'Tasa Confirmación',
-    description: 'Promedio General',
-    value: props.estadisticas?.tasaConfirmacion || '91%',
-    subtitle: 'Meta alcanzada',
-    meta: 'Meta: >90%',
-    icon: 'check-check',
-    gradient: 'from-green-500 to-emerald-500',
-    trend: 'up',
-    progress: 91
-  },
-  {
-    title: 'Pendientes',
-    description: 'Últimos 7 días',
-    value: props.estadisticas?.pendientes || '15',
-    subtitle: 'Requieren atención',
-    meta: 'De 128 enviados',
-    icon: 'alert-circle',
-    gradient: 'from-yellow-500 to-orange-500',
-    trend: 'neutral',
-    progress: 12
-  }
-])
+const cards = computed(() => {
+  // Aseguramos valores numéricos para cálculos
+  const total = Number(props.estadisticas?.totalEnviados || 0)
+  const tasa = Number(props.estadisticas?.tasaConfirmacion || 0)
+  const pendientes = Number(props.estadisticas?.pendientes || 0)
+  
+  // Cálculo dinámico de progreso (ejemplo simple)
+  // Para total enviados, asumimos una meta visual de 50 para que la barra se mueva
+  const metaEnviados = 50 
+  const progresoEnviados = Math.min((total / metaEnviados) * 100, 100)
+
+  // Para pendientes, calculamos qué % del total son pendientes
+  // Si hay muchos pendientes, la barra se llena (alerta)
+  const porcentajePendientes = total > 0 ? Math.round((pendientes / total) * 100) : 0
+
+  return [
+    {
+      title: 'Total Enviados',
+      description: 'Histórico',
+      value: total,
+      subtitle: 'Comunicados activos',
+      meta: 'Envíos realizados',
+      icon: 'mail',
+      gradient: 'from-blue-500 to-cyan-500',
+      trend: 'neutral', // Podrías calcular esto si tuvieras datos del mes anterior
+      progress: progresoEnviados // Ahora se mueve según la cantidad
+    },
+    {
+      title: 'Tasa Confirmación',
+      description: 'Promedio General',
+      value: `${tasa}%`, // Agregamos el % visualmente
+      subtitle: tasa > 80 ? 'Excelente' : tasa > 50 ? 'Regular' : 'Baja respuesta',
+      meta: 'Meta: >90%',
+      icon: 'check-check',
+      gradient: tasa > 80 ? 'from-green-500 to-emerald-500' : 'from-yellow-500 to-orange-500',
+      trend: tasa > 50 ? 'up' : 'down',
+      progress: tasa // La barra refleja exactamente el porcentaje real
+    },
+    {
+      title: 'Pendientes',
+      description: 'Sin leer/confirmar',
+      value: pendientes,
+      subtitle: 'Requieren atención',
+      meta: `De ${total} enviados`,
+      icon: 'alert-circle',
+      gradient: 'from-orange-500 to-red-500',
+      trend: 'neutral',
+      progress: porcentajePendientes // La barra muestra qué % del total falta por responder
+    }
+  ]
+})
 
 onMounted(() => {
   createIcons({ icons })

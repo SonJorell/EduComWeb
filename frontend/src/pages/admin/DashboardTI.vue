@@ -1,49 +1,45 @@
 <template>
   <div class="min-h-screen bg-slate-950 text-white relative overflow-hidden">
-    
-    <!-- 🌌 Fondo Animado -->
-    <div class="fixed inset-0 overflow-hidden pointer-events-none">
-      <div class="absolute top-1/4 -left-48 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl animate-blob"></div>
-      <div class="absolute bottom-1/3 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+
+    <!-- 🌌 Fondo Animado Mejorado -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 select-none">
+      <div class="absolute top-1/4 -left-60 w-[450px] h-[450px] bg-blue-500/20 rounded-full blur-3xl animate-blob"></div>
+      <div class="absolute bottom-1/2 right-0 w-[430px] h-[430px] bg-violet-500/20 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+      <div class="absolute top-[60%] left-2/3 w-[350px] h-[150px] bg-cyan-400/10 rounded-full blur-2xl rotate-12"></div>
     </div>
 
-    <!-- 🔷 Header -->
-    <header class="relative z-20 border-b border-slate-800 bg-slate-900/60 backdrop-blur-xl shadow-lg">
-      <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+    <!-- 🔷 Header glass -->
+    <header class="relative z-20 border-b border-slate-800 bg-slate-900/80 backdrop-blur-lg shadow-xl">
+      <div class="max-w-7xl mx-auto px-8 py-6 flex justify-between items-center">
 
-        <div class="flex items-center gap-3">
-          <div class="w-11 h-11 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-            <i data-lucide="settings" class="w-5 h-5 text-white"></i>
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <i data-lucide="settings" class="w-6 h-6 text-white"></i>
           </div>
-
-          <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent tracking-wide">
+          <h1 class="text-3xl font-extrabold bg-gradient-to-r from-blue-400 via-cyan-400 to-sky-300 bg-clip-text text-transparent tracking-wide animate-gradient drop-shadow">
             Panel de Administración TI
           </h1>
         </div>
 
         <button
           @click="logout"
-          class="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-300 rounded-xl font-semibold border border-red-500/40
-                 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-lg shadow-red-900/20"
+          class="px-5 py-2.5 bg-gradient-to-r from-red-500/30 to-pink-600/30 hover:from-red-600/50 hover:to-pink-700/30 text-red-200 hover:text-red-100 rounded-2xl font-bold border border-red-500/40 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-md"
         >
-          <i data-lucide="log-out" class="w-4 h-4"></i>
+          <i data-lucide="log-out" class="w-5 h-5"></i>
           Salir
         </button>
-
       </div>
     </header>
 
     <!-- 📦 Contenido -->
-    <main class="relative z-10 max-w-7xl mx-auto p-6 space-y-12">
+    <main class="relative z-10 max-w-7xl mx-auto px-6 py-8 space-y-14">
 
       <!-- 🧩 Gestión Principal -->
       <section>
-        <h2 class="text-xl font-semibold text-slate-200 mb-4">
+        <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent mb-6">
           Gestión Principal
         </h2>
-
-        <div class="grid md:grid-cols-3 gap-6">
-
+        <div class="grid md:grid-cols-3 gap-8">
           <CardTI
             title="Gestión de Usuarios"
             icon="user-cog"
@@ -51,7 +47,6 @@
             desc="Crea nuevas credenciales, asigna roles y restablece contraseñas."
             @open="abrirModulo('usuarios')"
           />
-
           <CardTI
             title="Gestión de Cursos"
             icon="book"
@@ -59,7 +54,6 @@
             desc="Crea, edita o elimina cursos y asigna profesores jefes."
             @open="abrirModulo('cursos')"
           />
-
           <CardTI
             title="Roles y Permisos"
             icon="shield"
@@ -67,19 +61,16 @@
             desc="Controla el acceso de los usuarios y permisos internos."
             @open="abrirModulo('roles')"
           />
-
         </div>
       </section>
 
       <!-- ⚙️ Administración del Sistema -->
       <section>
-        <h2 class="text-xl font-semibold text-slate-200 mb-4 flex items-center gap-2">
-          <i data-lucide="server-cog" class="w-5 h-5 text-slate-400"></i>
+        <h2 class="text-2xl font-bold bg-gradient-to-r from-cyan-300 via-blue-400 to-blue-300 bg-clip-text text-transparent flex items-center gap-3 mb-6">
+          <i data-lucide="server-cog" class="w-6 h-6 text-cyan-300"></i>
           Administración del Sistema
         </h2>
-
-        <div class="grid md:grid-cols-2 gap-6">
-
+        <div class="grid md:grid-cols-2 gap-8">
           <CardTI
             title="Estado del Sistema"
             icon="server"
@@ -87,15 +78,13 @@
             desc="Revisa conexión a la base de datos y estado general del backend."
             @open="abrirModulo('sistema')"
           />
-
           <CardTI
             title="Auditoría y Registros"
             icon="clipboard-list"
-            color="red"
+            color="amber"
             desc="Consulta el historial de acciones de los usuarios."
             @open="abrirModulo('auditoria')"
           />
-
         </div>
       </section>
 
@@ -103,12 +92,9 @@
       <section class="pb-10">
         <router-view />
       </section>
-
     </main>
   </div>
 </template>
-
-
 
 <script setup>
 import { onMounted } from 'vue'
@@ -120,12 +106,10 @@ import CardTI from '@/components/admin/CardTI.vue'
 const router = useRouter()
 const authStore = useAuthStore()
 
-// Abrir módulo dentro del dashboard TI
-const abrirModulo = (modulo) => {
+const abrirModulo = modulo => {
   router.push(`/dashboard-ti/${modulo}`)
 }
 
-// Logout
 const logout = () => {
   authStore.logout()
   router.push('/login')
@@ -136,21 +120,24 @@ onMounted(() => {
 })
 </script>
 
-
-
 <style scoped>
-/* Animación suave de las burbujas de fondo */
 @keyframes blob {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(40px, -30px) scale(1.15); }
-  66% { transform: translate(-40px, 20px) scale(0.9); }
+  33% { transform: translate(40px, -30px) scale(1.12); }
+  66% { transform: translate(-40px, 20px) scale(0.91); }
 }
-
 .animate-blob {
-  animation: blob 12s infinite ease-in-out;
+  animation: blob 14s infinite ease-in-out;
 }
-
 .animation-delay-2000 {
   animation-delay: 2s;
+}
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: animatedGradient 9s ease-in-out infinite;
+}
+@keyframes animatedGradient {
+  0%,100%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
 }
 </style>

@@ -46,7 +46,7 @@
 
 <script setup>
 import { onMounted } from 'vue'
-import { useNotificacionesStore } from '../store/notificaciones'
+import { useNotificacionesStore } from '../../store/notificaciones'
 
 const notifs = useNotificacionesStore()
 onMounted(() => notifs.cargarMias())

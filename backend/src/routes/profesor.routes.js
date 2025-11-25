@@ -23,75 +23,67 @@ const router = express.Router()
 // 🧭 Grupo de rutas protegidas para PROFESOR
 // ==========================================
 
-// ✅ Obtener los cursos asignados al profesor
 // GET /api/profesores/me/cursos
 router.get(
   '/me/cursos',
   requireAuth,
-  requireRole('Profesor'),
+  requireRole('PROFESOR'),
   cursosProfesor
 )
 
-// ✅ Obtener resumen general del dashboard del profesor
 // GET /api/profesores/me/resumen
 router.get(
   '/me/resumen',
   requireAuth,
-  requireRole('Profesor'),
+  requireRole('PROFESOR'),
   resumenProfesor
 )
 
-// ✅ Listar todas las notificaciones enviadas por el profesor
 // GET /api/profesores/me/notificaciones
 router.get(
   '/me/notificaciones',
   requireAuth,
-  requireRole('Profesor'),
+  requireRole('PROFESOR'),
   notificacionesProfesor
 )
 
-// ✅ Obtener comunicados recientes (para el dashboard)
 // GET /api/profesores/me/comunicados
 router.get(
   '/me/comunicados',
   requireAuth,
-  requireRole('Profesor'),
+  requireRole('PROFESOR'),
   comunicadosRecientes
 )
 
-// ✅ Obtener los apoderados asociados a los cursos del profesor
 // GET /api/profesores/me/apoderados
 router.get(
   '/me/apoderados',
   requireAuth,
-  requireRole('Profesor'),
+  requireRole('PROFESOR'),
   apoderadosProfesor
 )
 
-// ✅ Crear una nueva notificación o comunicado
 // POST /api/profesores/notificaciones
 router.post(
   '/notificaciones',
   requireAuth,
-  requireRole('Profesor'),
+  requireRole('PROFESOR'),
   enviarNotificacion
 )
 
-// ✅ Obtener el detalle completo de una notificación específica
 // GET /api/profesores/notificaciones/:id
 router.get(
   '/notificaciones/:id',
   requireAuth,
-  requireRole('Profesor'),
+  requireRole('PROFESOR'),
   detalleNotificacion
 )
 
-// ✅ Deshabilitar (soft delete) un comunicado sin eliminarlo físicamente
 // PUT /api/profesores/notificaciones/:id/deshabilitar
 router.put(
   '/notificaciones/:id/deshabilitar',
   requireAuth,
-  requireRole('Profesor'),
+  requireRole('PROFESOR'),
   deshabilitarComunicado
 )
 

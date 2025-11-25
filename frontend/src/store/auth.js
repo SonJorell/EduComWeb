@@ -10,10 +10,8 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   actions: {
-    // 🔐 Iniciar sesión
     async login(email, password) {
       try {
-        // ⛔️ Ruta corregida → /api/auth/login
         const res = await axios.post(`${API_URL}/api/auth/login`, {
           email,
           password
@@ -22,27 +20,32 @@ export const useAuthStore = defineStore('auth', {
         const token = res.data.token || res.data.accessToken
         const user = res.data.user
 
-        // Guardar en estado
+        // 🔥 Normalización del rol
+        const normalRol = (user.rol?.nombre || user.rol || user.role || '').toUpperCase()
+
+        this.user = {
+          id: user.id,
+          nombre: user.nombre,
+          email: user.email,
+          rol: normalRol
+        }
+
         this.token = token
-        this.user = user
 
-        // Guardar en localStorage
+        localStorage.setItem('user', JSON.stringify(this.user))
         localStorage.setItem('token', token)
-        localStorage.setItem('user', JSON.stringify(user))
-        localStorage.setItem('role', user.rol || user.role || '')
+        localStorage.setItem('role', normalRol)
 
-        console.log('✅ Usuario autenticado:', user)
+        console.log("🔥 Usuario autenticado:", this.user)
 
-        return user
+        return this.user
 
       } catch (error) {
-        console.error('❌ Error al iniciar sesión:', error.response?.data || error.message)
-
+        console.error('❌ Error al iniciar sesión:', error)
         throw new Error(error.response?.data?.error || 'Error al iniciar sesión')
       }
     },
 
-    // 🚪 Cerrar sesión
     logout() {
       this.user = null
       this.token = ''
@@ -51,12 +54,10 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('role')
     },
 
-    // 🧠 Verificar si sigue autenticado
     isAuthenticated() {
       return !!this.token
     },
 
-    // 🔍 Obtener rol normalizado
     getRole() {
       return (this.user?.rol || localStorage.getItem('role') || '').toLowerCase()
     }

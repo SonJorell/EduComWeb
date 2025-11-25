@@ -15,7 +15,7 @@ const router = Router()
 router.post(
   '/',
   requireAuth,
-  requireRole('Profesor'),
+  requireRole('PROFESOR'),
   enviarNotificacion
 )
 
@@ -23,7 +23,7 @@ router.post(
 router.get(
   '/mias',
   requireAuth,
-  requireRole('Profesor'),
+  requireRole('PROFESOR'),
   misNotificaciones
 )
 
@@ -31,7 +31,7 @@ router.get(
 router.get(
   '/:id/estados',
   requireAuth,
-  requireRole('Profesor'),
+  requireRole('PROFESOR'),
   detalleEstados
 )
 
@@ -39,13 +39,13 @@ router.get(
 router.post(
   '/:id/leido',
   requireAuth,
-  requireRole('Apoderado'),
+  requireRole('APODERADO'),
   marcarLeido
 )
 router.post(
   '/:id/confirmado',
   requireAuth,
-  requireRole('Apoderado'),
+  requireRole('APODERADO'),
   marcarConfirmado
 )
 

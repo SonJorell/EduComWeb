@@ -8,8 +8,28 @@ import {
 
 const router = express.Router()
 
-router.get("/notificaciones", requireAuth, requireRole("Apoderado"), obtenerNotificaciones)
-router.put("/notificaciones/leidas", requireAuth, requireRole("Apoderado"), marcarTodasLeidas)
-router.put("/notificaciones/:id/confirmar", requireAuth, requireRole("Apoderado"), confirmarAsistencia)
+// 📥 Obtener todas las notificaciones del apoderado
+router.get(
+  "/notificaciones",
+  requireAuth,
+  requireRole("APODERADO"),
+  obtenerNotificaciones
+)
+
+// 📘 Marcar todas como leídas
+router.put(
+  "/notificaciones/leidas",
+  requireAuth,
+  requireRole("APODERADO"),
+  marcarTodasLeidas
+)
+
+// 🟩 Confirmar asistencia a una notificación
+router.put(
+  "/notificaciones/:id/confirmar",
+  requireAuth,
+  requireRole("APODERADO"),
+  confirmarAsistencia
+)
 
 export default router

@@ -1,222 +1,268 @@
-import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcrypt'
-import { fakerES as faker } from '@faker-js/faker'
+// prisma/seed.js
+import { PrismaClient, TipoNotificacion } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
+const TOTAL_ALUMNOS = 800
+const BCRYPT_ROUNDS = 10
+
+// =======================================================
+// 🔧 Helpers
+// =======================================================
+function randomRut() {
+  return `${Math.floor(10000000 + Math.random() * 89999999)}-${Math.floor(Math.random() * 9)}`
+}
+
+function randomPhone() {
+  return `+56 9 ${Math.floor(1000 + Math.random() * 8999)} ${Math.floor(1000 + Math.random() * 8999)}`
+}
+
+function randomName() {
+  const nombres = ['Juan', 'María', 'Pedro', 'Lucía', 'Javier', 'Sofía', 'Diego', 'Camila', 'Andrés', 'Valentina']
+  const apellidos = ['González', 'Muñoz', 'Rojas', 'Díaz', 'Araya', 'Torres', 'Castillo', 'Vera', 'Pérez', 'Fuentes']
+
+  const n = nombres[Math.floor(Math.random() * nombres.length)]
+  const a1 = apellidos[Math.floor(Math.random() * apellidos.length)]
+  const a2 = apellidos[Math.floor(Math.random() * apellidos.length)]
+  return `${n} ${a1} ${a2}`
+}
+
+function slugEmail(nombre) {
+  return nombre.toLowerCase().replace(/\s+/g, '.')
+}
+
+// Garantiza que los correos NO se dupliquen
+async function uniqueEmail(base) {
+  let counter = 0
+  let email = `${base}@colegioarica.cl`
+
+  while (await prisma.usuario.findUnique({ where: { email } })) {
+    counter++
+    email = `${base}.${counter}@colegioarica.cl`
+  }
+
+  return email
+}
+
+function randomFromArray(arr) {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+function randomDateWithin(days = 60) {
+  const now = new Date()
+  const past = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+  return new Date(past.getTime() + Math.random() * (now.getTime() - past.getTime()))
+}
+
+// =======================================================
+// CURSOS
+// =======================================================
+const cursosList = [
+  ...Array.from({ length: 8 }, (_, i) => [`${i + 1}° Básico A`, `${i + 1}° Básico B`]).flat(),
+  ...Array.from({ length: 4 }, (_, i) => [`${i + 1}° Medio A`, `${i + 1}° Medio B`]).flat()
+]
+
+// =======================================================
+// 🚀 MAIN
+// =======================================================
 async function main() {
-  console.log('🌱 Iniciando generación de datos ficticios...')
+  console.log('🧹 Limpiando base de datos...')
 
-  // ====================================
-  // 1️⃣ CREAR ROLES
-  // ====================================
-  const [adminRol, profesorRol, apoderadoRol] = await Promise.all([
-    prisma.rol.upsert({
-      where: { nombre: 'Administrador' },
-      update: {},
-      create: { nombre: 'Administrador' }
-    }),
-    prisma.rol.upsert({
-      where: { nombre: 'Profesor' },
-      update: {},
-      create: { nombre: 'Profesor' }
-    }),
-    prisma.rol.upsert({
-      where: { nombre: 'Apoderado' },
-      update: {},
-      create: { nombre: 'Apoderado' }
-    })
+  await prisma.auditLog.deleteMany()
+  await prisma.recepcion.deleteMany()
+  await prisma.notificacion.deleteMany()
+  await prisma.profesorCurso.deleteMany()
+  await prisma.alumno.deleteMany()
+  await prisma.apoderado.deleteMany()
+  await prisma.curso.deleteMany()
+  await prisma.usuario.deleteMany()
+  await prisma.rol.deleteMany()
+
+  console.log('📌 Creando roles...')
+  const [rolAdmin, rolDirector, rolProfesor, rolApoderado] = await Promise.all([
+    prisma.rol.create({ data: { nombre: 'ADMIN' } }),
+    prisma.rol.create({ data: { nombre: 'DIRECTOR' } }),
+    prisma.rol.create({ data: { nombre: 'PROFESOR' } }),
+    prisma.rol.create({ data: { nombre: 'APODERADO' } })
   ])
-  console.log('✅ Roles creados.')
 
-  // ====================================
-  // 2️⃣ CREAR USUARIOS
-  // ====================================
-  const passwordHash = await bcrypt.hash('123456', 10)
-
-  const admin = await prisma.usuario.upsert({
-    where: { email: 'admin@colegioarica.cl' },
-    update: {},
-    create: {
-      nombre: 'Administrador General',
-      email: 'admin@colegioarica.cl',
-      passwordHash,
-      rolId: adminRol.id
+  console.log('👤 Creando usuarios clave...')
+  await prisma.usuario.create({
+    data: {
+      nombre: 'Administrador TI',
+      email: 'admin.ti@colegioarica.cl',
+      passwordHash: await bcrypt.hash('admin123', BCRYPT_ROUNDS),
+      rolId: rolAdmin.id
     }
   })
 
-  const profesores = await Promise.all(
-    Array.from({ length: 20 }).map((_, i) =>
-      prisma.usuario.create({
+  await prisma.usuario.create({
+    data: {
+      nombre: 'Director General',
+      email: 'director@colegioarica.cl',
+      passwordHash: await bcrypt.hash('director123', BCRYPT_ROUNDS),
+      rolId: rolDirector.id
+    }
+  })
+
+  console.log('🏫 Creando cursos...')
+  const cursos = await Promise.all(
+    cursosList.map(nombre =>
+      prisma.curso.create({
         data: {
-          nombre: faker.person.fullName(),
-          email: `profesor${i + 1}@colegioarica.cl`,
-          passwordHash,
-          rolId: profesorRol.id
+          nombre,
+          nivel: nombre.split(' ')[0],
+          jornada: 'Mañana',
+          anio: 2024
         }
       })
     )
   )
-  console.log(`👩‍🏫 Profesores creados (${profesores.length}).`)
 
-  // ====================================
-  // 3️⃣ CREAR CURSOS
-  // ====================================
-  const niveles = [
-    '1° Básico', '2° Básico', '3° Básico', '4° Básico',
-    '5° Básico', '6° Básico', '7° Básico', '8° Básico',
-    '1° Medio', '2° Medio', '3° Medio', '4° Medio'
-  ]
-  const secciones = ['A', 'B']
-  const cursos = []
+  console.log('👨‍🏫 Creando profesores...')
+  const profesores = []
 
-  for (const nivel of niveles) {
-    for (const seccion of secciones) {
-      const curso = await prisma.curso.create({
-        data: {
-          nombre: `${nivel} ${seccion}`,
-          nivel
-        }
-      })
-      cursos.push(curso)
-    }
-  }
-  console.log(`🏫 Cursos creados (${cursos.length}).`)
-
-  // ====================================
-  // 4️⃣ ASIGNAR PROFESORES A CURSOS
-  // ====================================
-  let i = 0
   for (const curso of cursos) {
+    const nombre = randomName()
+    const emailBase = slugEmail(nombre)
+    const email = await uniqueEmail(emailBase)
+
+    const profesor = await prisma.usuario.create({
+      data: {
+        nombre,
+        email,
+        passwordHash: await bcrypt.hash('profesor123', BCRYPT_ROUNDS),
+        rolId: rolProfesor.id
+      }
+    })
+
+    profesores.push(profesor)
+
     await prisma.profesorCurso.create({
       data: {
-        profesorId: profesores[i % profesores.length].id,
-        cursoId: curso.id
+        profesorId: profesor.id,
+        cursoId: curso.id,
+        rolInterno: 'JEFE'
       }
     })
-    i++
   }
-  console.log('📘 Profesores asignados a cursos.')
 
-  // ====================================
-  // 5️⃣ CREAR APODERADOS Y ALUMNOS
-  // ====================================
-  const apoderados = []
-  for (let i = 0; i < 200; i++) {
-    const user = await prisma.usuario.create({
-      data: {
-        nombre: faker.person.fullName(),
-        email: `apoderado${i + 1}@colegioarica.cl`,
-        passwordHash,
-        rolId: apoderadoRol.id
-      }
-    })
-
-    const apoderado = await prisma.apoderado.create({
-      data: {
-        usuarioId: user.id,
-        nombre: user.nombre,
-        rut: faker.string.alphanumeric(8).toUpperCase(),
-        telefono: faker.phone.number('+56 9 #### ####'),
-        email: user.email
-      }
-    })
-
-    apoderados.push(apoderado)
-  }
-  console.log(`👨‍👩‍👧‍👦 Apoderados creados (${apoderados.length}).`)
+  console.log('👨‍👩‍👧 Creando alumnos y apoderados...')
+  const alumnosPerCurso = Math.floor(TOTAL_ALUMNOS / cursos.length)
+  let total = 0
+  const apoderadosPool = []
 
   for (const curso of cursos) {
-    const alumnosPorCurso = faker.number.int({ min: 25, max: 35 })
-    const alumnos = Array.from({ length: alumnosPorCurso }).map(() => ({
-      nombre: faker.person.fullName(),
-      cursoId: curso.id,
-      apoderadoId: faker.helpers.arrayElement(apoderados).id
-    }))
+    for (let i = 0; i < alumnosPerCurso; i++) {
+      if (total >= TOTAL_ALUMNOS) break
 
-    await prisma.alumno.createMany({ data: alumnos, skipDuplicates: true })
-  }
-  console.log('🧒 Alumnos creados y asignados a cursos.')
+      const alumnoName = randomName()
 
-  // ====================================
-  // 6️⃣ GENERAR NOTIFICACIONES MASIVAS POR PROFESOR
-  // ====================================
-  const tipos = ['REUNION', 'AVISO', 'ANOTACION', 'FELICITACION']
+      let apoderado
+      if (apoderadosPool.length > 0 && Math.random() < 0.2) {
+        apoderado = randomFromArray(apoderadosPool)
+      } else {
+        const apName = randomName()
+        const emailBase = slugEmail(apName)
+        const email = await uniqueEmail(emailBase)
 
-  for (const profesor of profesores) {
-    const cursosDelProfesor = await prisma.profesorCurso.findMany({
-      where: { profesorId: profesor.id },
-      include: { curso: true }
-    })
+        const usuarioAp = await prisma.usuario.create({
+          data: {
+            nombre: apName,
+            email,
+            passwordHash: await bcrypt.hash('apoderado123', BCRYPT_ROUNDS),
+            rolId: rolApoderado.id
+          }
+        })
 
-    const cantidad = faker.number.int({ min: 5, max: 10 })
-    for (let n = 0; n < cantidad; n++) {
-      const curso = faker.helpers.arrayElement(cursosDelProfesor)?.curso
-      if (!curso) continue
+        apoderado = await prisma.apoderado.create({
+          data: {
+            usuarioId: usuarioAp.id,
+            nombre: apName,
+            rut: randomRut(),
+            telefono: randomPhone(),
+            email
+          }
+        })
 
-      const tipo = faker.helpers.arrayElement(tipos)
+        apoderadosPool.push(apoderado)
+      }
 
-      const notificacion = await prisma.notificacion.create({
+      await prisma.alumno.create({
         data: {
-          titulo:
-            tipo === 'REUNION'
-              ? 'Reunión de Apoderados'
-              : tipo === 'AVISO'
-              ? 'Aviso importante'
-              : tipo === 'ANOTACION'
-              ? 'Observación de comportamiento'
-              : 'Felicitación especial',
-          mensaje:
-            tipo === 'REUNION'
-              ? 'Se cita a reunión el próximo martes a las 18:00 hrs.'
-              : tipo === 'AVISO'
-              ? 'Se recuerda el inicio de evaluaciones la próxima semana.'
-              : tipo === 'ANOTACION'
-              ? 'Se informa una observación de conducta.'
-              : 'Felicitamos al curso por su participación destacada.',
-          tipo,
-          emisorId: profesor.id,
-          programadaPara: faker.date.soon({ days: 15 })
+          nombre: alumnoName,
+          cursoId: curso.id,
+          apoderadoId: apoderado.id
         }
       })
 
-      const alumnos = await prisma.alumno.findMany({
-        where: { cursoId: curso.id },
+      total++
+    }
+  }
+
+  console.log(`✔ ${total} alumnos creados.`)
+
+  console.log('📨 Generando notificaciones...')
+
+  const tipos = Object.values(TipoNotificacion)
+
+  for (const prof of profesores) {
+    const cursosProf = await prisma.profesorCurso.findMany({
+      where: { profesorId: prof.id }
+    })
+
+    const cursoIds = cursosProf.map(c => c.cursoId)
+    if (!cursoIds.length) continue
+
+    const count = 2 + Math.floor(Math.random() * 2)
+
+    for (let i = 0; i < count; i++) {
+      const cursoDestinoId = randomFromArray(cursoIds)
+      const curso = cursos.find(c => c.id === cursoDestinoId)
+
+      const createdAt = randomDateWithin(45)
+
+      const notif = await prisma.notificacion.create({
+        data: {
+          titulo: `Comunicado ${i + 1} - ${curso.nombre}`,
+          mensaje: `Estimados apoderados del curso ${curso.nombre}, este es un comunicado informativo.`,
+          tipo: randomFromArray(tipos),
+          prioridad: Math.random() < 0.25 ? 'ALTA' : 'NORMAL',
+          emisorId: prof.id,
+          createdAt,
+          cursosDestino: [cursoDestinoId],
+          activo: true
+        }
+      })
+
+      const alumnosCurso = await prisma.alumno.findMany({
+        where: { cursoId: cursoDestinoId },
         include: { apoderado: true }
       })
 
-      const recepciones = alumnos.map(a => ({
-        notificacionId: notificacion.id,
-        apoderadoId: a.apoderado.id,
-        leido: faker.datatype.boolean({ probability: 0.7 }),
-        confirmado: faker.datatype.boolean({ probability: 0.5 }),
-        leidoAt: faker.date.recent({ days: 15 }),
-        confirmadoAt: faker.date.recent({ days: 10 })
+      const apods = [...new Map(alumnosCurso.map(a => [a.apoderado.id, a.apoderado])).values()]
+
+      const recepciones = apods.map(ap => ({
+        notificacionId: notif.id,
+        apoderadoId: ap.id,
+        leido: Math.random() < 0.7,
+        confirmado: Math.random() < 0.5,
+        leidoAt: randomDateWithin(20),
+        confirmadoAt: randomDateWithin(10),
+        activo: true
       }))
 
-      // Evita errores de clave única
-      const datosUnicos = [
-        ...new Map(recepciones.map(r => [`${r.notificacionId}-${r.apoderadoId}`, r])).values()
-      ]
-
-      await prisma.recepcion.createMany({
-        data: datosUnicos,
-        skipDuplicates: true
-      })
+      await prisma.recepcion.createMany({ data: recepciones })
     }
   }
 
-  console.log('📢 Notificaciones generadas correctamente.')
-  console.log('✅ Seed completado con éxito.')
+  console.log('✨ Seed completado con éxito.')
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect()
-    console.log('✅ Conexión cerrada.')
-  })
-  .catch(async (e) => {
+  .catch(e => {
     console.error(e)
-    await prisma.$disconnect()
     process.exit(1)
   })
+  .finally(() => prisma.$disconnect())

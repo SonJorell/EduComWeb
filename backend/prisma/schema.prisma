@@ -1,6 +1,6 @@
-// ============================
+// =====================================================
 // Prisma Configuración
-// ============================
+// =====================================================
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,92 +10,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================
-// Modelos Principales
-// ============================
+// =====================================================
+// ENUMS (NUEVO)
+// =====================================================
 
-// Roles: Profesor, Apoderado, Administrador, etc.
-model Rol {
-  id       Int       @id @default(autoincrement())
-  nombre   String    @unique
-  usuarios Usuario[]
+// 🟢 Aquí definimos los estados posibles para un usuario
+enum EstadoUsuario {
+  ACTIVO
+  INACTIVO
+  VACACIONES
+  LICENCIA
 }
 
-// Usuario general del sistema
-model Usuario {
-  id        Int      @id @default(autoincrement())
-  nombre    String
-  email     String   @unique
-  passwordHash String    // Hasheado con bcrypt
-  rolId     Int
-  rol       Rol      @relation(fields: [rolId], references: [id])
-
-  // Relaciones
-  notificacionesEnviadas Notificacion[] @relation("EmisorNotificacion")
-  apoderado              Apoderado?
-  profesorCursos         ProfesorCurso[]
-}
-
-// ============================
-// Comunidad educativa
-// ============================
-
-// Apoderado vinculado 1:1 con Usuario
-model Apoderado {
-  id          Int       @id @default(autoincrement())
-  usuarioId   Int       @unique
-  usuario     Usuario   @relation(fields: [usuarioId], references: [id])
-
-  nombre      String
-  rut         String?   @unique
-  telefono    String?
-  email       String?   @unique  // puede ser distinto al del usuario
-
-  alumnos     Alumno[]
-  recepciones Recepcion[]
-}
-
-// Alumno perteneciente a un curso
-model Alumno {
-  id           Int        @id @default(autoincrement())
-  nombre       String
-  cursoId      Int
-  apoderadoId  Int
-
-  curso        Curso      @relation(fields: [cursoId], references: [id])
-  apoderado    Apoderado  @relation(fields: [apoderadoId], references: [id])
-}
-
-// Curso académico
-model Curso {
-  id             Int             @id @default(autoincrement())
-  nombre         String          @unique
-  nivel          String
-  jornada        String?         // Mañana / Tarde
-  anio           Int?            // Año académico
-
-  alumnos        Alumno[]
-  profesorCursos ProfesorCurso[]
-}
-
-// Relación Profesor ↔ Curso
-model ProfesorCurso {
-  id          Int      @id @default(autoincrement())
-  profesorId  Int
-  cursoId     Int
-  rolInterno  String?   // "JEFE" o "ASIGNATURA"
-
-  profesor    Usuario   @relation(fields: [profesorId], references: [id])
-  curso       Curso     @relation(fields: [cursoId], references: [id])
-
-  @@unique([profesorId, cursoId])
-}
-
-// ============================
-// Notificaciones y comunicación
-// ============================
-
-// Tipos posibles de notificación
 enum TipoNotificacion {
   REUNION
   FELICITACION
@@ -103,36 +29,140 @@ enum TipoNotificacion {
   AVISO
 }
 
-// ======================================================
-// 📬 Notificación emitida por un usuario (profesor o dirección)
-// ======================================================
+// =====================================================
+// ROLES Y USUARIOS
+// =====================================================
+
+model Rol {
+  id       Int       @id @default(autoincrement())
+  nombre   String    @unique
+  usuarios Usuario[]
+}
+
+model Usuario {
+  id           Int      @id @default(autoincrement())
+  nombre       String
+  email        String   @unique
+  passwordHash String
+
+  rolId Int
+  rol   Rol @relation(fields: [rolId], references: [id])
+
+  // 🟢 NUEVO CAMPO: Estado del usuario (Por defecto ACTIVO)
+  estado       EstadoUsuario @default(ACTIVO)
+
+  // Relaciones
+  notificacionesEnviadas Notificacion[] @relation("EmisorNotificacion")
+  apoderado              Apoderado?
+  profesorCursos         ProfesorCurso[]
+  auditLogs              AuditLog[]     @relation("UsuarioLogs")
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  usuarioId   Int?
+  usuario     Usuario? @relation("UsuarioLogs", fields: [usuarioId], references: [id])
+  accion      String
+  entidad     String
+  entidadId   Int?
+  descripcion String?
+  timestamp   DateTime @default(now())
+
+  @@map("AuditLog")
+}
+
+// =====================================================
+// APODERADOS Y ALUMNOS
+// =====================================================
+
+model Apoderado {
+  id        Int     @id @default(autoincrement())
+  usuarioId Int     @unique
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  nombre   String
+  rut      String? @unique
+  telefono String?
+  email    String? @unique
+
+  alumnos     Alumno[]
+  recepciones Recepcion[]
+}
+
+model Alumno {
+  id          Int    @id @default(autoincrement())
+  nombre      String
+  cursoId     Int
+  apoderadoId Int
+
+  curso     Curso     @relation(fields: [cursoId], references: [id])
+  apoderado Apoderado @relation(fields: [apoderadoId], references: [id])
+}
+
+// =====================================================
+// CURSOS Y PROFESORES
+// =====================================================
+
+model Curso {
+  id      Int     @id @default(autoincrement())
+  nombre  String  @unique
+  nivel   String
+  jornada String?
+  anio    Int?
+
+  alumnos        Alumno[]
+  profesorCursos ProfesorCurso[]
+}
+
+model ProfesorCurso {
+  id         Int     @id @default(autoincrement())
+  profesorId Int
+  cursoId    Int
+  rolInterno String? // Ej: "JEFE", "ASIGNATURA"
+
+  profesor Usuario @relation(fields: [profesorId], references: [id])
+  curso    Curso   @relation(fields: [cursoId], references: [id])
+
+  @@unique([profesorId, cursoId])
+}
+
+// =====================================================
+// NOTIFICACIONES
+// =====================================================
+
 model Notificacion {
   id             Int               @id @default(autoincrement())
   titulo         String?
   mensaje        String
   tipo           TipoNotificacion?
   prioridad      String?
-  emisorId       Int
-  emisor         Usuario           @relation("EmisorNotificacion", fields: [emisorId], references: [id])
-  createdAt      DateTime          @default(now())
+
+  emisorId Int
+  emisor   Usuario @relation("EmisorNotificacion", fields: [emisorId], references: [id])
+
+  createdAt      DateTime  @default(now())
   programadaPara DateTime?
-  cursosDestino  Json?
-  recepciones    Recepcion[]
-  activo         Boolean           @default(true)
+
+  // 🔹 Guarda un JSON que será un arreglo de IDs de cursos, ej: [6, 9]
+  cursosDestino Json?
+
+  recepciones Recepcion[]
+  activo      Boolean     @default(true)
 }
 
 model Recepcion {
-  id              Int          @id @default(autoincrement())
-  notificacionId  Int
-  apoderadoId     Int
-  notificacion    Notificacion @relation(fields: [notificacionId], references: [id])
-  apoderado       Apoderado    @relation(fields: [apoderadoId], references: [id])
-  leido           Boolean      @default(false)
-  confirmado      Boolean      @default(false)
-  leidoAt         DateTime?
-  confirmadoAt    DateTime?
-  activo          Boolean      @default(true)
+  id             Int @id @default(autoincrement())
+  notificacionId Int
+  apoderadoId    Int
+
+  notificacion Notificacion @relation(fields: [notificacionId], references: [id])
+  apoderado    Apoderado    @relation(fields: [apoderadoId], references: [id])
+
+  leido        Boolean   @default(false)
+  confirmado   Boolean   @default(false)
+  leidoAt      DateTime?
+  confirmadoAt DateTime?
+  activo       Boolean   @default(true)
+
   @@unique([notificacionId, apoderadoId])
 }
-
-

@@ -7,17 +7,26 @@ function authHeaders() {
   return { Authorization: `Bearer ${localStorage.getItem('token')}` }
 }
 
-async function safeRequest(request) {
+// Función para manejar errores de forma centralizada
+async function safeRequest(promise) {
   try {
-    return await request
+    const response = await promise
+    // Retornamos data y error null si todo sale bien
+    return { data: response.data, error: null }
   } catch (err) {
-    console.error('❌ Error en adminService:', err.response?.data || err)
-    return { data: null, error: err }
+    console.error('❌ Error en adminService:', err.response?.data || err.message)
+    // Retornamos data null y el mensaje de error si falla
+    return { 
+      data: null, 
+      error: err.response?.data?.error || 'Error de conexión con el servidor' 
+    }
   }
 }
 
 export const adminService = {
-  // Usuarios
+  // ==========================================
+  // 👤 USUARIOS
+  // ==========================================
   obtenerUsuarios: () =>
     safeRequest(axios.get(`${API}/api/ti/usuarios`, { headers: authHeaders() })),
 
@@ -30,10 +39,13 @@ export const adminService = {
   eliminarUsuario: (id) =>
     safeRequest(axios.delete(`${API}/api/ti/usuarios/${id}`, { headers: authHeaders() })),
 
+  // Resetear a contraseña por defecto
   resetearPassword: (id) =>
-    safeRequest(axios.put(`${API}/api/ti/usuarios/${id}/resetear-password`, {}, { headers: authHeaders() })),
+    safeRequest(axios.post(`${API}/api/ti/usuarios/${id}/reset`, {}, { headers: authHeaders() })),
 
-  // Cursos
+  // ==========================================
+  // 📚 CURSOS
+  // ==========================================
   obtenerCursos: () =>
     safeRequest(axios.get(`${API}/api/ti/cursos`, { headers: authHeaders() })),
 
@@ -46,24 +58,34 @@ export const adminService = {
   eliminarCurso: (id) =>
     safeRequest(axios.delete(`${API}/api/ti/cursos/${id}`, { headers: authHeaders() })),
 
-  asignarProfesor: (cursoId, profesorId) =>
-    safeRequest(axios.post(`${API}/api/ti/cursos/${cursoId}/asignar-profesor`, { profesorId }, { headers: authHeaders() })),
+  // Asignar profesor (acepta rolInterno para definir si es JEFE)
+  asignarProfesor: (cursoId, profesorId, rolInterno = 'ASIGNATURA') =>
+    safeRequest(axios.post(`${API}/api/ti/cursos/${cursoId}/asignar-profesor`, { profesorId, rolInterno }, { headers: authHeaders() })),
 
-  // Roles
+  // Quitar profesor asignado
+  desasignarProfesor: (cursoId) =>
+    safeRequest(axios.delete(`${API}/api/ti/cursos/${cursoId}/desasignar-profesor`, { headers: authHeaders() })),
+
+  // ==========================================
+  // 🛡️ ROLES
+  // ==========================================
   obtenerRoles: () =>
     safeRequest(axios.get(`${API}/api/ti/roles`, { headers: authHeaders() })),
 
-  actualizarRolUsuario: (usuarioId, rolId) =>
-    safeRequest(axios.put(`${API}/api/ti/roles/usuarios/${usuarioId}`, { rolId }, { headers: authHeaders() })),
+  // Actualizar el rol de un usuario (PATCH)
+  // Nota: El backend espera { rolNombre: string }
+  actualizarRolUsuario: (usuarioId, rolNombre) =>
+    safeRequest(axios.patch(`${API}/api/ti/usuarios/${usuarioId}/rol`, { rolNombre }, { headers: authHeaders() })),
 
-  // Sistema
+  // ==========================================
+  // ⚙️ SISTEMA & AUDITORÍA
+  // ==========================================
   obtenerEstadoBD: () =>
     safeRequest(axios.get(`${API}/api/ti/sistema/db`, { headers: authHeaders() })),
 
   obtenerLogsSistema: () =>
     safeRequest(axios.get(`${API}/api/ti/sistema/logs`, { headers: authHeaders() })),
 
-  // Auditoría
   obtenerAuditoria: () =>
     safeRequest(axios.get(`${API}/api/ti/auditoria`, { headers: authHeaders() }))
 }

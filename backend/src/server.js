@@ -30,7 +30,7 @@ import authRoutes from './routes/auth.routes.js'
 import profesorRoutes from './routes/profesor.routes.js'
 import apoderadoRoutes from './routes/apoderado.routes.js'
 import tiRoutes from './routes/ti.routes.js'
-
+import directorRoutes from "./routes/director.routes.js"
 // ==========================================
 // 🛣️ Montar rutas
 // ==========================================
@@ -38,6 +38,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/profesores', profesorRoutes)
 app.use('/api/apoderado', apoderadoRoutes)
 app.use('/api/ti', tiRoutes)
+app.use("/api/director", directorRoutes)
 
 // Ruta base
 app.get('/', (req, res) => {

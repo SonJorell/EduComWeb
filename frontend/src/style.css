@@ -540,8 +540,8 @@ select {
   font-family: inherit;
   font-size: 1rem;
   
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--color-text-dark);
+  background-color: #0f172a !important; /* slate-900 */
+  color: #e2e8f0 !important; /* slate-300 */
   
   border: 2px solid var(--color-border-dark);
   border-radius: var(--radius-lg);
@@ -979,3 +979,8 @@ select:disabled {
     box-shadow: none !important;
   }
 }
+.chart-container {
+  height: 280px;   /* Ajusta aquí el alto estándar de tus gráficos */
+  position: relative;
+}
+
