@@ -6,59 +6,72 @@ import { useAuthStore } from '@/store/auth'
 import { apoderadoService } from '@/services/apoderadoService'
 import ComunicadoCard from '@/components/apoderado/ComunicadoCard.vue'
 
-// ==================== STATE ====================
 const router = useRouter()
 const authStore = useAuthStore()
 
-// UI & Feedback
-const modalLogout = ref(false)
+// ==================== STATE ====================
+const notificaciones = ref([])
 const loading = ref(true)
+const modalLogout = ref(false)
 const showToast = ref(false)
 const toastMessage = ref('')
 
-// Datos
-const notificaciones = ref([])
-const nombreAlumno = ref('Benjamín Torres')
+// Datos usuario
+const nombreApoderado = computed(() => authStore.user?.nombre || 'Apoderado')
+const nombreAlumno = ref('Cargando alumno...') // Estado inicial
 const resumen = ref({ nuevos: 0, pendientes: 0, asistencia: 0 })
 
-// Control de Actualizaciones
+// Control
 let intervaloActualizacion = null
 let idsConocidos = new Set()
 
-// ==================== COMPUTED ====================
-const nombreUsuario = computed(() => authStore.user?.nombre || 'Apoderado')
-
 // ==================== METHODS ====================
 
-// 📅 FIX DEFINITIVO DE FECHAS (Manipulación de String Directa)
+// 1. CARGAR PERFIL (Para ver nombre del alumno)
+const cargarPerfil = async () => {
+  try {
+    // Verificamos que el servicio exista
+    if (apoderadoService.obtenerPerfil) {
+        const res = await apoderadoService.obtenerPerfil()
+        if (res.data && res.data.nombreAlumno) {
+            nombreAlumno.value = res.data.nombreAlumno
+        } else {
+            nombreAlumno.value = 'Sin alumno asignado'
+        }
+    }
+  } catch (error) {
+    console.error('Error cargando perfil:', error)
+    nombreAlumno.value = 'Alumno'
+  }
+}
+
+// 📅 2. FIX FECHA (Método Manual - Infalible)
 const formatearFecha = (fechaRaw) => {
   if (!fechaRaw) return 'Sin fecha';
 
   try {
-    // 1. Si viene como objeto Date, lo convertimos a ISO String
+    // Aseguramos que sea string ISO
     let fechaStr = fechaRaw;
     if (fechaRaw instanceof Date) {
         fechaStr = fechaRaw.toISOString();
     }
 
-    // 2. Tomamos la parte de la fecha "2025-11-25" (antes de la T)
-    // Esto funciona siempre que la BD devuelva formato ISO (Prisma lo hace)
-    const soloFecha = fechaStr.split('T')[0]; 
+    // 1. Tomamos la parte de la fecha antes de la 'T' (2025-11-25)
+    const soloFecha = fechaStr.toString().split('T')[0]; 
     
-    // 3. Separamos Año, Mes y Día
+    // 2. Separamos Año, Mes y Día
     const [anio, mes, dia] = soloFecha.split('-');
 
-    // 4. Retornamos en orden CL
+    // 3. Retornamos ordenado (dd-mm-yyyy)
     return `${dia}-${mes}-${anio}`;
     
   } catch (error) {
-    // Fallback si el formato es muy extraño
-    console.error("Error parseando fecha:", fechaRaw);
-    return 'Fecha desconocida';
+    console.error("Error fecha:", fechaRaw);
+    return 'Fecha inválida';
   }
-}
+};
 
-// 🔔 SISTEMA DE NOTIFICACIONES PUSH
+// 🔔 3. PUSH NOTIFICATIONS
 const solicitarPermisoPush = async () => {
   if ("Notification" in window && Notification.permission === "default") {
     await Notification.requestPermission();
@@ -81,7 +94,23 @@ const dispararPush = (titulo, cuerpo) => {
   }
 }
 
-// 🔄 Carga de Datos Inteligente
+// 🧠 4. AUTO-LECTURA
+const procesarLecturaAutomatica = async (datos) => {
+  if (document.visibilityState === 'visible') {
+    const sinLeer = datos.filter(n => !n.leido)
+    if (sinLeer.length > 0) {
+      try {
+        if (apoderadoService.marcarTodasLeidas) {
+          await apoderadoService.marcarTodasLeidas()
+          datos.forEach(n => n.leido = true)
+        }
+      } catch (e) { console.error(e) }
+    }
+  }
+  return datos
+}
+
+// 🔄 5. CARGAR DATOS
 async function cargarDatos(backgroundUpdate = false) {
   try {
     if (!backgroundUpdate) loading.value = true
@@ -95,36 +124,29 @@ async function cargarDatos(backgroundUpdate = false) {
       if (nuevos.length > 0) {
         const ultimo = nuevos[0]
         dispararPush("Nuevo Comunicado", ultimo.titulo || "Tienes información nueva.")
-        mostrarToast(`¡Llegaron ${nuevos.length} comunicados nuevos!`)
+        mostrarToast(`¡Tienes ${nuevos.length} comunicado(s) nuevo(s)!`)
       }
     }
     datosRaw.forEach(n => idsConocidos.add(n.id))
 
-    // Mapear Datos
+    // Mapeo de Datos con FIX DE FECHA
     let notificacionesProcesadas = datosRaw.map(n => ({
       ...n,
       id: n.id,
       titulo: n.titulo || '(Sin título)',
-      // Priorizamos createdAt, que es el estándar de Prisma
-      fecha: formatearFecha(n.createdAt || n.fecha), 
+      tipo: n.tipo || 'GENERAL',
+      fecha: formatearFecha(n.createdAt || n.fecha), // 👈 Aquí se aplica el fix
       leido: n.leido ?? false,
-      confirmado: n.confirmado ?? false,
-      tipo: n.tipo || 'GENERAL'
+      confirmado: n.confirmado ?? false
     }))
 
-    // Auto-lectura (marcar como vistos si la ventana está activa)
-    const sinLeer = notificacionesProcesadas.filter(n => !n.leido)
-    if (sinLeer.length > 0 && document.visibilityState === 'visible') {
-        if (apoderadoService.marcarTodasLeidas) {
-            await apoderadoService.marcarTodasLeidas().catch(e => console.log(e))
-            notificacionesProcesadas.forEach(n => n.leido = true)
-        }
-    }
+    // Auto-lectura
+    notificacionesProcesadas = await procesarLecturaAutomatica(notificacionesProcesadas)
 
     // Guardar
     notificaciones.value = notificacionesProcesadas
 
-    // Actualizar Resumen
+    // Resumen
     resumen.value = {
       nuevos: notificaciones.value.filter(n => !n.leido).length,
       pendientes: notificaciones.value.filter(n => !n.confirmado && (n.tipo === 'REUNION' || n.tipo === 'CITACION')).length,
@@ -142,12 +164,14 @@ async function cargarDatos(backgroundUpdate = false) {
   }
 }
 
-// Acciones Manuales
 const confirmarAsistencia = async (id) => {
   try {
     await apoderadoService.confirmarAsistencia(id)
     const notif = notificaciones.value.find(n => n.id === id)
-    if (notif) notif.confirmado = true
+    if (notif) {
+        notif.confirmado = true
+        notif.leido = true
+    }
     mostrarToast('Confirmación enviada correctamente')
     cargarDatos(true) 
   } catch (error) {
@@ -170,18 +194,19 @@ onMounted(async () => {
   createIcons({ icons })
   await solicitarPermisoPush()
   
-  // Carga inicial
-  await cargarDatos(false)
+  // Carga inicial paralela
+  await Promise.all([
+      cargarDatos(false),
+      cargarPerfil()
+  ])
 
   // Polling cada 5 segundos
   intervaloActualizacion = setInterval(() => {
-    // Solo actualizamos si la pestaña está visible para ahorrar recursos
     if (document.visibilityState === 'visible') {
         cargarDatos(true)
     }
   }, 5000)
 
-  // Al volver a la pestaña, forzar actualización (útil para auto-lectura)
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") cargarDatos(true)
   });
@@ -195,12 +220,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-950 text-slate-200 font-[Inter] relative overflow-x-hidden">
+  <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-200 font-[Inter] relative overflow-x-hidden">
     
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-emerald-900/20 to-transparent opacity-50"></div>
-        <div class="absolute bottom-0 right-0 w-[500px] h-[500px] bg-blue-900/10 rounded-full blur-[100px]"></div>
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(16,185,129,0.03)_1px,transparent_0)] [background-size:50px_50px]"></div>
+      <div class="absolute top-1/4 -left-48 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-blob"></div>
+      <div class="absolute top-1/3 -right-48 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(148,163,184,0.05)_1px,transparent_0)] [background-size:50px_50px]"></div>
     </div>
 
     <Teleport to="body">
@@ -235,17 +260,19 @@ onUnmounted(() => {
             </div>
             <div class="flex flex-col">
               <h1 class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent leading-tight">
-                {{ nombreUsuario }}
+                {{ nombreApoderado }}
               </h1>
               <div class="flex items-center gap-1.5 mt-1">
-                <i data-lucide="user" class="w-3 h-3 text-slate-400"></i>
-                <span class="text-xs text-slate-400">Es Apoderado de:</span>
+                <span class="text-xs text-slate-400">Alumno:</span>
                 <span class="text-sm font-semibold text-emerald-400">{{ nombreAlumno }}</span>
               </div>
             </div>
           </div>
 
-          <button @click="modalLogout = true" class="flex items-center gap-2 px-4 py-2.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 rounded-xl transition-all border border-red-500/30 hover:border-red-500/50 active:scale-95 font-semibold">
+          <button 
+            @click="modalLogout = true" 
+            class="flex items-center gap-2 px-4 py-2.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 rounded-xl transition-all border border-red-500/30 font-semibold"
+          >
             <i data-lucide="log-out" class="w-4 h-4"></i>
             <span class="hidden sm:inline text-sm">Salir</span>
           </button>
@@ -312,7 +339,7 @@ onUnmounted(() => {
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                   </span>
-                  <span class="text-xs text-slate-400 font-medium">En tiempo real</span>
+                  <span class="text-xs text-slate-400 font-medium">Actualizando (5s)</span>
               </div>
           </div>
 

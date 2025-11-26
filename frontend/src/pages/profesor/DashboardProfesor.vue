@@ -210,7 +210,7 @@ onMounted(async () => {
   intervaloActualizacion = setInterval(() => {
     console.log('🔄 Actualizando datos en segundo plano...')
     cargarDatos(true)
-  }, 30000) // Cambiado a 30s para no saturar
+  }, 2000) // Cambiado a 30s para no saturar
   
   window.addEventListener('resize', updateWidth)
   window.addEventListener('keydown', handleEscape)

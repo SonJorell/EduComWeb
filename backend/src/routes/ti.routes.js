@@ -71,20 +71,27 @@ router.post("/usuarios", async (req, res) => {
   } catch (e) { res.status(500).json({ error: "Error creando usuario" }) }
 })
 
-// 3. Editar Usuario (Actualiza Estado y Rol)
+// 3. Editar Usuario (Actualiza Datos, Rol, Estado y CONTRASEÑA)
 router.put("/usuarios/:id", async (req, res) => {
   try {
     const id = Number(req.params.id)
-    const { nombre, email, rolNombre, estado } = req.body
+    const { nombre, email, rolNombre, estado, password } = req.body // 👈 Agregamos password
 
     const dataUpdate = { nombre, email }
     
-    // Si envían el estado (ACTIVO, VACACIONES, ETC), lo actualizamos
+    // 1. Actualizar Estado
     if (estado) dataUpdate.estado = estado
 
+    // 2. Actualizar Rol
     if (rolNombre) {
       const rol = await prisma.rol.findUnique({ where: { nombre: rolNombre } })
       if (rol) dataUpdate.rolId = rol.id
+    }
+
+    // 3. Actualizar Contraseña (Solo si se envía) 🔥
+    if (password && password.trim() !== "") {
+        const passwordHash = await bcrypt.hash(password, 10)
+        dataUpdate.passwordHash = passwordHash
     }
 
     await prisma.usuario.update({ where: { id }, data: dataUpdate })

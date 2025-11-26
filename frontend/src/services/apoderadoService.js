@@ -1,27 +1,35 @@
-import axios from "axios";
+import axios from 'axios'
 
-const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 function authHeaders() {
-  return { Authorization: `Bearer ${localStorage.getItem("token")}` };
+  return { Authorization: `Bearer ${localStorage.getItem('token')}` }
 }
 
-async function safeRequest(request) {
+async function safeRequest(promise) {
   try {
-    return await request;
+    const response = await promise
+    return { data: response.data, error: null }
   } catch (err) {
-    console.error("❌ Error en apoderadoService:", err);
-    return { data: null, error: err };
+    console.error('Error en servicio:', err)
+    return { data: null, error: err.response?.data?.error || 'Error de conexión' }
   }
 }
 
 export const apoderadoService = {
-  obtenerNotificaciones: () =>
+  // Obtener notificaciones
+  obtenerNotificaciones: () => 
     safeRequest(axios.get(`${API}/api/apoderado/notificaciones`, { headers: authHeaders() })),
 
-  marcarTodasLeidas: () =>
+  // Marcar todo como leído
+  marcarTodasLeidas: () => 
     safeRequest(axios.put(`${API}/api/apoderado/notificaciones/leidas`, {}, { headers: authHeaders() })),
 
-  confirmarAsistencia: (id) =>
-    safeRequest(axios.put(`${API}/api/apoderado/notificaciones/${id}/confirmar`, {}, { headers: authHeaders() }))
-};
+  // Confirmar asistencia
+  confirmarAsistencia: (id) => 
+    safeRequest(axios.put(`${API}/api/apoderado/notificaciones/${id}/confirmar`, {}, { headers: authHeaders() })),
+
+  // 👇 ESTA ES LA QUE FALTABA 👇
+  obtenerPerfil: () => 
+    safeRequest(axios.get(`${API}/api/apoderado/perfil`, { headers: authHeaders() }))
+}

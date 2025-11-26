@@ -3,12 +3,21 @@ import { requireAuth, requireRole } from "../middlewares/auth.middleware.js"
 import {
   obtenerNotificaciones,
   marcarTodasLeidas,
-  confirmarAsistencia
+  confirmarAsistencia,
+  obtenerPerfil 
 } from "../controllers/apoderado.controller.js"
 
 const router = express.Router()
 
-// 📥 Obtener todas las notificaciones del apoderado
+// 👤 Obtener perfil (nombre del apoderado y alumno)
+router.get(
+  "/perfil",
+  requireAuth,
+  requireRole("APODERADO"),
+  obtenerPerfil
+)
+
+// 📥 Obtener todas las notificaciones
 router.get(
   "/notificaciones",
   requireAuth,
@@ -16,7 +25,7 @@ router.get(
   obtenerNotificaciones
 )
 
-// 📘 Marcar todas como leídas
+// 📘 Marcar todas como leídas (Auto-lectura)
 router.put(
   "/notificaciones/leidas",
   requireAuth,
@@ -24,7 +33,7 @@ router.put(
   marcarTodasLeidas
 )
 
-// 🟩 Confirmar asistencia a una notificación
+// 🟩 Confirmar asistencia
 router.put(
   "/notificaciones/:id/confirmar",
   requireAuth,

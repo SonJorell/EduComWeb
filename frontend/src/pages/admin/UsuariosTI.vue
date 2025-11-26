@@ -20,33 +20,50 @@
       </button>
     </div>
 
-    <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-4 mb-6 shadow-xl flex flex-col md:flex-row gap-4 items-center justify-between">
+    <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-4 mb-6 shadow-xl flex flex-col lg:flex-row gap-4 items-center justify-between">
       
-      <div class="relative w-full md:w-96 group">
-        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors w-5 h-5"></i>
-        <input
-          v-model="busqueda"
-          type="text"
-          placeholder="Buscar por nombre, email..."
-          class="w-full bg-slate-950/50 border border-slate-700 text-slate-200 text-sm rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-        />
+      <div class="flex flex-col md:flex-row gap-4 w-full lg:w-auto flex-1">
+        <div class="relative w-full md:w-80 group">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors w-5 h-5"></i>
+            <input
+            v-model="busqueda"
+            type="text"
+            placeholder="Buscar por nombre, email..."
+            class="w-full bg-slate-950/50 border border-slate-700 text-slate-200 text-sm rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+            />
+        </div>
+
+        <div class="relative w-full md:w-48">
+            <i data-lucide="filter" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4"></i>
+            <select
+            v-model="filtroRol"
+            class="w-full bg-slate-950/50 border border-slate-700 text-slate-200 text-sm rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+            >
+            <option value="">Todos los roles</option>
+            <option value="Administrador">Administrador</option>
+            <option value="TI">Soporte TI</option>
+            <option value="Profesor">Profesor</option>
+            <option value="Apoderado">Apoderado</option>
+            <option value="Director">Director</option>
+            </select>
+            <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4 pointer-events-none"></i>
+        </div>
       </div>
 
-      <div class="relative w-full md:w-64">
-        <i data-lucide="filter" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4"></i>
-        <select
-          v-model="filtroRol"
-          class="w-full bg-slate-950/50 border border-slate-700 text-slate-200 text-sm rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+      <div class="flex items-center gap-3 bg-slate-950/30 px-4 py-2 rounded-xl border border-slate-700/50">
+        <span class="text-sm text-slate-400 font-medium">Mostrar Inactivos</span>
+        <button 
+            @click="mostrarInactivos = !mostrarInactivos"
+            class="relative w-11 h-6 rounded-full transition-colors duration-300 ease-in-out focus:outline-none"
+            :class="mostrarInactivos ? 'bg-blue-600' : 'bg-slate-700'"
         >
-          <option value="">Todos los roles</option>
-          <option value="Administrador">Administrador</option>
-          <option value="TI">Soporte TI</option>
-          <option value="Profesor">Profesor</option>
-          <option value="Apoderado">Apoderado</option>
-          <option value="Director">Director</option>
-        </select>
-        <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4 pointer-events-none"></i>
+            <span 
+                class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-300 ease-in-out shadow-sm"
+                :class="mostrarInactivos ? 'translate-x-5' : 'translate-x-0'"
+            ></span>
+        </button>
       </div>
+
     </div>
 
     <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
@@ -118,7 +135,7 @@
                   <button 
                     @click="eliminar(u)" 
                     class="p-2 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors"
-                    title="Eliminar / Deshabilitar"
+                    title="Deshabilitar / Eliminar"
                   >
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                   </button>
@@ -156,7 +173,6 @@
           </div>
 
           <div class="p-6 space-y-5 overflow-y-auto">
-            
             <div>
               <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Nombre Completo</label>
               <div class="relative">
@@ -164,22 +180,21 @@
                 <input 
                   v-model="form.nombre" 
                   type="text" 
-                  placeholder="Ej: Juan Pérez"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:border-blue-500 outline-none transition-all"
                 >
               </div>
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Correo Electrónico</label>
-              <div class="relative">
-                <i data-lucide="mail" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4"></i>
+              <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Correo Institucional</label>
+              <div class="relative flex items-center">
+                <i data-lucide="mail" class="absolute left-3 z-10 text-slate-500 w-4 h-4"></i>
                 <input 
-                  v-model="form.email" 
-                  type="email" 
-                  placeholder="correo@colegio.cl"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                  v-model="form.usuarioEmail" 
+                  type="text" 
+                  class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-32 py-2.5 text-sm text-white focus:border-blue-500 outline-none transition-all"
                 >
+                <span class="absolute right-4 text-slate-500 text-sm select-none pointer-events-none">@colegioarica.cl</span>
               </div>
             </div>
 
@@ -189,9 +204,8 @@
                 <i data-lucide="shield" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4"></i>
                 <select 
                   v-model="form.rolNombre"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none appearance-none cursor-pointer"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:border-blue-500 outline-none cursor-pointer"
                 >
-                  <option disabled value="">Seleccionar...</option>
                   <option value="Administrador">Administrador</option>
                   <option value="TI">TI / Soporte</option>
                   <option value="Director">Director</option>
@@ -202,20 +216,19 @@
               </div>
             </div>
 
-            <div v-if="!editando">
-              <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">Contraseña Inicial</label>
+            <div>
+              <label class="block text-xs font-bold text-slate-400 uppercase mb-1.5">
+                  {{ editando ? 'Cambiar Contraseña (Opcional)' : 'Contraseña Inicial' }}
+              </label>
               <div class="relative">
                 <i data-lucide="lock" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4"></i>
                 <input 
                   v-model="form.password" 
                   type="text" 
-                  placeholder="Escribe una contraseña segura"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                  :placeholder="editando ? 'Dejar vacía para no cambiar' : 'Escribe una contraseña'"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:border-blue-500 outline-none"
                 >
               </div>
-              <p class="text-[10px] text-slate-500 mt-1.5 flex items-center gap-1">
-                <i data-lucide="info" class="w-3 h-3"></i> Esta contraseña se guardará encriptada.
-              </p>
             </div>
 
             <div v-if="editando">
@@ -224,12 +237,12 @@
                 <i data-lucide="activity" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4"></i>
                 <select 
                   v-model="form.estado"
-                  class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:border-blue-500 outline-none appearance-none cursor-pointer"
+                  class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:border-blue-500 outline-none cursor-pointer"
                 >
                     <option value="ACTIVO">🟢 Activo</option>
                     <option value="VACACIONES">🔵 Vacaciones</option>
                     <option value="LICENCIA">🟡 Licencia Médica</option>
-                    
+                    <option value="INACTIVO">🔴 Inactivo (Bloqueado)</option>
                 </select>
                 <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4 pointer-events-none"></i>
               </div>
@@ -238,13 +251,8 @@
           </div>
 
           <div class="p-6 border-t border-slate-800 bg-slate-950/50 flex justify-end gap-3">
-            <button @click="cerrarModal" class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
-              Cancelar
-            </button>
-            <button 
-              @click="guardar"
-              class="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg shadow-blue-500/20 transition-all active:scale-95"
-            >
+            <button @click="cerrarModal" class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">Cancelar</button>
+            <button @click="guardar" class="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg transition-all active:scale-95">
               {{ editando ? 'Guardar Cambios' : 'Crear Usuario' }}
             </button>
           </div>
@@ -253,37 +261,26 @@
       </div>
     </Transition>
 
-    <Transition name="modal">
-      <div v-if="mostrarPassModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" @click.self="mostrarPassModal = false">
-        <div class="bg-slate-900 border border-slate-600 w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center animate-scale-in">
-          <div class="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i data-lucide="key" class="w-6 h-6 text-yellow-400"></i>
-          </div>
-          <h3 class="text-lg font-bold text-white mb-2">Contraseña Generada</h3>
-          <p class="text-sm text-slate-400 mb-4">Copia esta contraseña y entrégala al usuario. No podrás verla nuevamente.</p>
-          
-          <div class="bg-slate-950 border border-slate-700 rounded-lg p-3 mb-6 font-mono text-lg text-emerald-400 tracking-wider select-all cursor-text">
-            {{ nuevaPasswordGenerada }}
-          </div>
-
-          <button @click="mostrarPassModal = false" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-semibold transition-colors border border-slate-600">
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </Transition>
-
     <Transition name="toast">
       <div v-if="showToast" class="fixed bottom-6 right-6 z-50 bg-slate-800 border border-slate-700 text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-slide-up">
-        <div 
-          class="w-8 h-8 rounded-full flex items-center justify-center"
-          :class="toastType === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'"
-        >
+        <div class="w-8 h-8 rounded-full flex items-center justify-center" :class="toastType === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'">
           <i :data-lucide="toastType === 'success' ? 'check' : 'alert-triangle'" class="w-5 h-5"></i>
         </div>
         <div>
           <h4 class="text-sm font-bold">{{ toastType === 'success' ? 'Éxito' : 'Error' }}</h4>
           <p class="text-xs text-slate-400">{{ toastMessage }}</p>
+        </div>
+      </div>
+    </Transition>
+
+    <Transition name="modal">
+      <div v-if="mostrarPassModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" @click.self="mostrarPassModal = false">
+        <div class="bg-slate-900 border border-slate-600 w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center animate-scale-in">
+          <h3 class="text-lg font-bold text-white mb-2">Contraseña Generada</h3>
+          <div class="bg-slate-950 border border-slate-700 rounded-lg p-3 mb-6 font-mono text-lg text-emerald-400 tracking-wider select-all cursor-text">
+            {{ nuevaPasswordGenerada }}
+          </div>
+          <button @click="mostrarPassModal = false" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-semibold border border-slate-600">Cerrar</button>
         </div>
       </div>
     </Transition>
@@ -296,49 +293,41 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { createIcons, icons } from 'lucide'
 import { adminService } from '@/services/adminService'
 
-// --- STATE ---
 const usuarios = ref([])
 const cargando = ref(false)
 const busqueda = ref('')
 const filtroRol = ref('')
+const mostrarInactivos = ref(false) // Nuevo estado para el toggle
 
-// Modales
+// Modales y Toasts
 const mostrarModal = ref(false)
 const editando = ref(false)
 const usuarioEditando = ref(null)
 const mostrarPassModal = ref(false)
 const nuevaPasswordGenerada = ref('')
-
-// Toast
 const showToast = ref(false)
 const toastMessage = ref('')
 const toastType = ref('success')
 
 const form = ref({
   nombre: '',
-  email: '',
+  usuarioEmail: '', 
   rolNombre: '',
   password: '',
-  estado: 'ACTIVO' // Default state
+  estado: 'ACTIVO'
 })
 
-// --- UTILS ---
+// Helpers
 const lanzarToast = (msg, type = 'success') => {
-  toastMessage.value = msg
-  toastType.value = type
-  showToast.value = true
+  toastMessage.value = msg; toastType.value = type; showToast.value = true
   setTimeout(() => showToast.value = false, 3000)
 }
-
 const generarPassword = () => {
   const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#"
-  let pass = ""
-  for(let i=0; i<10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length))
+  let pass = ""; for(let i=0; i<10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length))
   return pass
 }
-
 const getInitials = (name) => name ? name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'U'
-
 const getRoleBadgeColor = (rol) => {
   switch(rol) {
     case 'Administrador': return 'bg-purple-500/10 text-purple-400 border-purple-500/20'
@@ -348,7 +337,6 @@ const getRoleBadgeColor = (rol) => {
     default: return 'bg-slate-500/10 text-slate-400 border-slate-500/20'
   }
 }
-
 const getEstadoColor = (estado) => {
   switch(estado) {
     case 'ACTIVO': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
@@ -359,16 +347,24 @@ const getEstadoColor = (estado) => {
   }
 }
 
+// 🔥 COMPUTED: Filtrado inteligente
 const usuariosFiltrados = computed(() => {
   return usuarios.value.filter(u => {
+    // 1. Filtro Inactivos
+    if (!mostrarInactivos.value && u.estado === 'INACTIVO') return false
+    
+    // 2. Filtro Rol
     const coincideRol = filtroRol.value ? (u.rol?.nombre || u.rolNombre || '').toLowerCase() === filtroRol.value.toLowerCase() : true
+    
+    // 3. Filtro Texto
     const texto = (u.nombre + ' ' + u.email).toLowerCase()
     const coincideTexto = texto.includes(busqueda.value.toLowerCase())
+    
     return coincideRol && coincideTexto
   })
 })
 
-// --- CRUD METHODS ---
+// CRUD
 const cargarUsuarios = async () => {
   cargando.value = true
   try {
@@ -380,23 +376,16 @@ const cargarUsuarios = async () => {
 }
 
 const abrirCrear = () => {
-  editando.value = false
-  usuarioEditando.value = null
-  form.value = { nombre: '', email: '', rolNombre: '', password: '', estado: 'ACTIVO' }
+  editando.value = false; usuarioEditando.value = null
+  form.value = { nombre: '', usuarioEmail: '', rolNombre: '', password: '', estado: 'ACTIVO' }
   mostrarModal.value = true
   nextTick(() => createIcons({ icons }))
 }
 
 const editar = (u) => {
-  editando.value = true
-  usuarioEditando.value = u
-  form.value = {
-    nombre: u.nombre,
-    email: u.email,
-    rolNombre: u.rol?.nombre || u.rolNombre || '',
-    password: '',
-    estado: u.estado // Carga el estado actual
-  }
+  editando.value = true; usuarioEditando.value = u
+  const emailParts = u.email ? u.email.split('@') : ['']
+  form.value = { nombre: u.nombre, usuarioEmail: emailParts[0], rolNombre: u.rol?.nombre || u.rolNombre || '', password: '', estado: u.estado }
   mostrarModal.value = true
   nextTick(() => createIcons({ icons }))
 }
@@ -404,91 +393,50 @@ const editar = (u) => {
 const cerrarModal = () => { mostrarModal.value = false }
 
 const guardar = async () => {
-  if (!form.value.nombre || !form.value.email || !form.value.rolNombre) {
-    lanzarToast('Completa los campos obligatorios', 'error')
-    return
+  if (!form.value.nombre || !form.value.usuarioEmail || !form.value.rolNombre) {
+    lanzarToast('Completa los campos', 'error'); return
   }
-
+  const finalEmail = `${form.value.usuarioEmail}@colegioarica.cl`
   try {
-    if (editando.value && usuarioEditando.value) {
+    if (editando.value) {
       const res = await adminService.editarUsuario(usuarioEditando.value.id, {
-        nombre: form.value.nombre,
-        email: form.value.email,
-        rolNombre: form.value.rolNombre,
-        estado: form.value.estado
+        nombre: form.value.nombre, email: finalEmail, rolNombre: form.value.rolNombre, estado: form.value.estado, password: form.value.password
       })
-      if (!res.error) {
-        lanzarToast('Usuario actualizado')
-        await cargarUsuarios()
-        cerrarModal()
-      } else lanzarToast(res.error, 'error')
+      if (!res.error) { lanzarToast('Usuario actualizado'); await cargarUsuarios(); cerrarModal() }
+      else lanzarToast(res.error, 'error')
     } else {
-      if (!form.value.password) {
-        lanzarToast('La contraseña es obligatoria', 'error')
-        return
-      }
+      if (!form.value.password) { lanzarToast('Contraseña requerida', 'error'); return }
       const res = await adminService.crearUsuario({
-        nombre: form.value.nombre,
-        email: form.value.email,
-        rolNombre: form.value.rolNombre,
-        password: form.value.password
+        nombre: form.value.nombre, email: finalEmail, rolNombre: form.value.rolNombre, password: form.value.password
       })
-      if (!res.error) {
-        lanzarToast('Usuario creado exitosamente')
-        await cargarUsuarios()
-        cerrarModal()
-      } else lanzarToast(res.error, 'error')
+      if (!res.error) { lanzarToast('Usuario creado'); await cargarUsuarios(); cerrarModal() }
+      else lanzarToast(res.error, 'error')
     }
-  } catch (e) { lanzarToast('Error en el servidor', 'error') }
+  } catch (e) { lanzarToast('Error', 'error') }
 }
 
-// 🔥 RESETEAR PASSWORD
 const resetear = async (u) => {
-  if (!confirm(`¿Generar nueva contraseña aleatoria para ${u.nombre}?`)) return
+  if (!confirm(`¿Generar nueva contraseña para ${u.nombre}?`)) return
   const nuevaPass = generarPassword()
-  try {
-    const res = await adminService.resetearPassword(u.id, nuevaPass)
-    if (!res.error) {
-      nuevaPasswordGenerada.value = nuevaPass
-      mostrarPassModal.value = true
-      lanzarToast('Contraseña actualizada')
-      nextTick(() => createIcons({ icons }))
-    } else {
-      lanzarToast('No se pudo actualizar', 'error')
-    }
-  } catch (e) { lanzarToast('Error de conexión', 'error') }
+  const res = await adminService.resetearPassword(u.id, nuevaPass)
+  if (!res.error) { nuevaPasswordGenerada.value = nuevaPass; mostrarPassModal.value = true; lanzarToast('Contraseña actualizada') }
+  else lanzarToast('Error', 'error')
 }
 
 const eliminar = async (u) => {
-  if (!confirm(`¿Deseas deshabilitar a ${u.nombre}? (Pasará a INACTIVO)`)) return
-  try {
-    const res = await adminService.eliminarUsuario(u.id)
-    if (!res.error) { lanzarToast('Usuario deshabilitado'); await cargarUsuarios() }
-    else lanzarToast(res.error, 'error')
-  } catch (e) { lanzarToast('Error de conexión', 'error') }
+  if (!confirm(`¿Deshabilitar a ${u.nombre}?`)) return
+  const res = await adminService.eliminarUsuario(u.id)
+  if (!res.error) { lanzarToast('Usuario deshabilitado'); await cargarUsuarios() }
+  else lanzarToast('Error', 'error')
 }
 
-onMounted(() => {
-  createIcons({ icons })
-  cargarUsuarios()
-})
+onMounted(() => { createIcons({ icons }); cargarUsuarios() })
 </script>
 
 <style scoped>
-/* Animaciones y Transiciones */
-.modal-enter-active, .modal-leave-active, .toast-enter-active, .toast-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+.modal-enter-active, .modal-leave-active, .toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(20px); }
-
-.animate-scale-in { animation: scale-in 0.3s ease-out forwards; }
-@keyframes scale-in {
-  0% { opacity: 0; transform: scale(0.95); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-/* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
 ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }

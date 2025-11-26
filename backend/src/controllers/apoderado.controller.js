@@ -22,7 +22,7 @@ export const obtenerNotificaciones = async (req, res) => {
       where: {
         apoderadoId: apoderado.id,
         activo: true,
-        notificacion: { activo: true } // ✅ no mostrar deshabilitadas
+        notificacion: { activo: true }
       },
       include: {
         notificacion: {
@@ -68,8 +68,8 @@ export const marcarTodasLeidas = async (req, res) => {
       where: {
         apoderadoId: apoderado.id,
         leido: false,
-        activo: true,                      // ✅ solo las activas
-        notificacion: { activo: true }     // ✅ y notific. activas
+        activo: true,
+        notificacion: { activo: true }
       },
       data: { leido: true, leidoAt: new Date() }
     })
@@ -101,7 +101,7 @@ export const confirmarAsistencia = async (req, res) => {
       where: {
         apoderadoId: apoderado.id,
         notificacionId,
-        activo: true,                      // ✅ solo si está activa
+        activo: true,
         notificacion: { activo: true }
       },
       data: {
@@ -114,5 +114,35 @@ export const confirmarAsistencia = async (req, res) => {
   } catch (error) {
     console.error('❌ Error al confirmar asistencia:', error)
     res.status(500).json({ error: 'Error interno del servidor' })
+  }
+}
+
+// ==========================================================
+// 👤 Obtener Perfil del Apoderado (Nombre Alumno)
+// ==========================================================
+export const obtenerPerfil = async (req, res) => {
+  try {
+    const usuarioId = req.user.sub
+
+    const apoderado = await prisma.apoderado.findUnique({
+      where: { usuarioId },
+      include: {
+        alumnos: true 
+      }
+    })
+
+    if (!apoderado) {
+      return res.status(404).json({ error: "Perfil de apoderado no encontrado" })
+    }
+
+    res.json({
+      nombre: apoderado.nombre,
+      alumnos: apoderado.alumnos,
+      nombreAlumno: apoderado.alumnos.length > 0 ? apoderado.alumnos[0].nombre : "Sin alumno asignado"
+    })
+
+  } catch (error) {
+    console.error("Error obteniendo perfil:", error)
+    res.status(500).json({ error: "Error interno" })
   }
 }
